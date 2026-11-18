@@ -1,0 +1,12 @@
+{
+ "detector": "dfine-small",
+ "photos": 5794,
+ "device": "mps",
+ "found": 0.9995,
+ "iou_mean": 0.9031,
+ "iou_median": 0.9415,
+ "iou50": 0.9872,
+ "iou75": 0.9184,
+ "boxes_per_photo": 1.304,
+ "ms_median_while_benchmarking": 94.2
+}

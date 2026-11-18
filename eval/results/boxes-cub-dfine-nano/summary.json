@@ -1,0 +1,12 @@
+{
+ "detector": "dfine-nano",
+ "photos": 5794,
+ "device": "mps",
+ "found": 0.9998,
+ "iou_mean": 0.8922,
+ "iou_median": 0.934,
+ "iou50": 0.9833,
+ "iou75": 0.8999,
+ "boxes_per_photo": 1.526,
+ "ms_median_while_benchmarking": 305.5
+}
