@@ -1,0 +1,33 @@
+# weights, data and run outputs: weights go out as GitHub Release assets, never in git
+data/
+runs/
+models/
+release/
+eval/photos/
+*.pt
+*.safetensors
+__pycache__/
+.ruff_cache/
+.DS_Store
+
+# the heads repository (lincleejun/bioclip-bird-heads) and its release assets live beside the main repo's files
+heads-repo/
+heads-repo-release/
+
+# private: working notes, the owner's own shoots and product prototypes
+HANDOFF.md
+TODO.md
+notes/culling-bench/
+docs/prototype/
+docs/prototype-v2/
+
+# drafts written for the owner
+docs/prd-desktop.md
+docs/prd-mobile.md
+
+# converted Core ML models and logs
+mobile/build/
+xcuserdata/
+
+# work in progress from another session (reads the owner's own shoots)
+distill/headcrops.py

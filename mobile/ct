@@ -1,0 +1,3 @@
+#!/bin/zsh
+# ./run plus coremltools in a throwaway overlay: ../bioscan's environment itself is not changed.
+cd "$(dirname "$0")/.." && HF_HUB_OFFLINE=1 PYTHONPATH=. exec uv run -q --project ../bioscan --with coremltools==9.0 python "$@"

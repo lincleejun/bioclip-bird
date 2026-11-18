@@ -1,0 +1,4 @@
+#!/bin/zsh
+# Run a script with the gardener (bioscan) environment: same torch / open_clip / timm versions, no second venv.
+# ponytail: borrows ../bioscan's uv env; give this project its own pyproject when the student ships without the teacher.
+cd "$(dirname "$0")" && HF_HUB_OFFLINE=1 PYTHONPATH=. exec uv run -q --project ../bioscan python "$@"
