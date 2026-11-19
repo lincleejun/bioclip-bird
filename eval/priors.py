@@ -33,8 +33,12 @@ sys.path.insert(0, str(HERE))
 from agree import RES, SYN, norm, preds  # noqa: E402
 
 NAMES = ROOT.parent / "bioscan" / "data" / "names" / "cache" / "bioclip-2.5-vith14-a4f7858b14c15128.npz"
-RARITY = ROOT / "data" / "rarity"
+RARITY = ROOT / "data" / "rarity"                       # set per list in main()
+SETS = {"groundtruth.csv": ("rarity", None, None),
+        "inat2026.csv": ("rarity", "eval2-listed.jsonl", "eval2-places.json"),
+        "inat-global.csv": ("rarity-global", "global-listed.jsonl", "global-places.json")}
 CA_BOX = (32.4, 42.1, -124.6, -114.1)
+ISO3 = {"US": "USA", "CA": "CAN", "CN": "CHN", "AU": "AUS", "BR": "BRA", "IN": "IND", "RU": "RUS", "ZA": "ZAF", "ID": "IDN"}
 BETAS = (0.5, 1.0)
 
 
@@ -83,21 +87,25 @@ def counts(regions: set[str], sci: list[str]) -> dict[str, np.ndarray]:
     return out
 
 
-def regions_of(rows: dict[str, dict]) -> dict[str, str]:
-    """photo -> GADM region code (state/province when it can be named, else the country)."""
-    names = {r["name_en"].lower(): r["code"] for r in csv.DictReader(open(RARITY / "region_names.csv"))}
+def regions_of(rows: dict[str, dict], listed: str | None, places_file: str | None) -> dict[str, str]:
+    """photo -> GBIF region code: the state/province when the table has it, else the country; '' when neither is known."""
+    names = {}
+    if (RARITY / "region_names.csv").exists():
+        names |= {r["name_en"].lower(): r["code"] for r in csv.DictReader(open(RARITY / "region_names.csv"))}
+    if (RARITY / "gadm_iso.csv").exists():
+        names |= {r["name"].lower(): r["gadm"] for r in csv.DictReader(open(RARITY / "gadm_iso.csv"))}
     out = {}
-    if all("country" not in r for r in rows.values()):                 # first set: California by its coordinates
+    if listed is None:                                                 # first set: California by its coordinates
         for p, r in rows.items():
             lat, lon = float(r["lat"]), float(r["lon"])
             out[p] = "USA.5_1" if CA_BOX[0] < lat < CA_BOX[1] and CA_BOX[2] < lon < CA_BOX[3] else "US"
         return out
     from distill.fetch_inat import Api
     obs_places = {}
-    for line in open(ROOT / "data" / "eval2-listed.jsonl"):
+    for line in open(ROOT / "data" / listed):
         for o in json.loads(line)["results"]:
             obs_places[str(o["id"])] = o.get("place_ids") or []
-    cache = ROOT / "data" / "eval2-places.json"
+    cache = ROOT / "data" / places_file
     places = json.loads(cache.read_text()) if cache.exists() else {}
     need = sorted({str(i) for p in rows for i in obs_places.get(Path(p).stem.split("_")[0], [])} - set(places))
     api = Api()
@@ -108,8 +116,22 @@ def regions_of(rows: dict[str, dict]) -> dict[str, str]:
     for p, r in rows.items():
         state = next((places[str(i)]["name"] for i in obs_places.get(Path(p).stem.split("_")[0], [])
                       if places.get(str(i), {}).get("admin_level") == 10), None)
-        out[p] = names.get((state or "").lower(), r["country"])
+        code = names.get((state or "").lower())
+        out[p] = code if code and code.startswith(ISO3.get(r["country"], "--") + ".") else r["country"]
     return out
+
+
+def continent(lat: float, lon: float) -> str:
+    """Rough coordinate boxes, for reporting only (Arabia counts as Africa, some islands land oddly)."""
+    if lon < -25:
+        return "Americas"
+    if lon >= 110 and lat < -11 or lon >= 150:
+        return "Oceania"
+    if lat >= 35 and lon < 60:
+        return "Europe"
+    if lat < 35 and lon < 52:
+        return "Africa"
+    return "Asia"
 
 
 def main() -> None:
@@ -119,12 +141,15 @@ def main() -> None:
     from PIL import Image
 
     from distill import slim
+    global RARITY
     list_name, run = sys.argv[1], sys.argv[2]
+    table, listed, places_file = SETS[list_name]
+    RARITY = ROOT / "data" / table
     rows, ref = truth(list_name), preds(run)
     keep = [p for p in rows if ref.get(p, {}).get("best")]
     z = np.load(NAMES)
     sci = [norm(s) for s in z["scientific"]]
-    region = regions_of({p: rows[p] for p in keep})
+    region = regions_of({p: rows[p] for p in keep}, listed, places_file)
 
     crops = []
     for p in keep:
@@ -149,7 +174,9 @@ def main() -> None:
     bird_prior = priors_for(lists, GeoPrior.load())["bird"]
     birdnet = np.stack([bird_prior.posterior(pv, bird_prior.p_geo(float(rows[p]["lat"]), float(rows[p]["lon"]), rows[p]["taken_at"]))
                         for p, pv in zip(keep, p_vis)])
-    n = counts(set(region.values()), sci)
+    n = counts(set(region.values()) - {""}, sci)
+    n[""] = np.zeros((13, len(sci)))                                     # no known region: no GBIF prior at all
+    known = np.array([region[p] != "" for p in keep])
     month = [int(rows[p]["taken_at"][5:7]) for p in keep]
     truths = [norm(rows[p]["scientific"]) for p in keep]
     # The evaluation photos are research-grade iNaturalist observations, which GBIF imports: take each one's own
@@ -173,16 +200,25 @@ def main() -> None:
     variants = {"no location": top5(logits), "BirdNET geo (gardener)": top5(np.log(birdnet + 1e-30))}
     for b in BETAS:
         variants[f"GBIF soft, beta {b}"] = top5(logits + b * share(win_clean))
-    variants["GBIF hard list"] = top5(np.where(win_clean > 0, logits, -1e9))
+    variants["GBIF hard list"] = top5(np.where((win_clean > 0) | ~known[:, None], logits, -1e9))
     variants["GBIF soft, beta 1.0, own records left in"] = top5(logits + share(win))
-    variants["GBIF hard list, own records left in"] = top5(np.where(win > 0, logits, -1e9))
+    variants["GBIF hard list, own records left in"] = top5(np.where((win > 0) | ~known[:, None], logits, -1e9))
 
     groups = {"all": [True] * len(keep)}
     if "country" in rows[keep[0]]:
-        for c in sorted({rows[p]["country"] for p in keep}):
-            groups[f"country {c}"] = [rows[p]["country"] == c for p in keep]
-        obs = {norm(r["scientific"]): sum(int(x.split(":")[1]) for x in r["regions"].split(";"))
-               for r in csv.DictReader(open(ROOT / "data" / "inat-raw" / "species.csv"))}
+        countries = sorted({rows[p]["country"] for p in keep})
+        if len(countries) <= 5:
+            for c in countries:
+                groups[f"country {c}"] = [rows[p]["country"] == c for p in keep]
+        else:
+            where = [continent(float(rows[p]["lat"]), float(rows[p]["lon"])) for p in keep]
+            for c in ("Americas", "Europe", "Africa", "Asia", "Oceania"):
+                groups[c] = [w == c for w in where]
+        if list_name == "inat-global.csv":
+            obs = {norm(t["name"]): t["observations"] for t in json.loads((ROOT / "data" / "global-taxa.json").read_text())}
+        else:
+            obs = {norm(r["scientific"]): sum(int(x.split(":")[1]) for x in r["regions"].split(";"))
+                   for r in csv.DictReader(open(ROOT / "data" / "inat-raw" / "species.csv"))}
         cut = np.quantile([obs.get(norm(rows[p]["scientific"]), 0) for p in keep], [1 / 3, 2 / 3])
         for label, lo, hi in (("least observed third", -1, cut[0]), ("middle third", cut[0], cut[1]), ("most observed third", cut[1], 1e18)):
             groups[f"species: {label}"] = [lo < obs.get(norm(rows[p]["scientific"]), 0) <= hi for p in keep]
@@ -190,8 +226,9 @@ def main() -> None:
     print(f"# Location priors on the same bird crops ({list_name}, boxes of run `{run}`)\n")
     print(f"{len(keep)} bird crops of {len(rows)} bird photos ({len(rows) - len(keep)} without a box are left out), "
           f"{len(set(truths))} species. Regions: {dict(Counter(region.values()).most_common(8))}"
-          f"{' ...' if len(set(region.values())) > 8 else ''}; {sum('.' not in region[p] for p in keep)} crops fell back to their "
-          f"country (state not matched). Own records taken out: {int(sum(o.sum() for o in own.values()))}.\n")
+          f"{' ...' if len(set(region.values())) > 8 else ''}; {sum('.' not in region[p] for p in keep)} crops at country level "
+          f"(no state/province table or name match), {int((~known).sum())} with no known country (no GBIF prior). "
+          f"Own records taken out: {int(sum(o.sum() for o in own.values()))}. GBIF table: data/{table}.\n")
     gone = Counter(t for p, t in zip(keep, truths) if t not in sci or clean[region[p]][1:].sum(0)[sci.index(t)] == 0)
     print(f"True names with no GBIF record in their region in any month (own records out): {sum(gone.values())} crops, "
           + ", ".join(f"*{t.capitalize()}* {c}" for t, c in gone.most_common()) + ".\n")

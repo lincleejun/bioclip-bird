@@ -6,7 +6,10 @@ Smaller models for naming birds in photos, measured end to end on 1,571 iNatural
 > 压小：BioCLIP 只留看图的一半并存成 8 位（0.63 GB），OWLv2 存成 8 位（156 MB），评测集上成绩基本不变。
 > 结果按两个维度分开写：认鸟（鸟种模型：原版 / 16 位 / 8 位、有无地点、逐张一致性、BioCLIP 第一代、蒸馏学生）和找鸟
 > （检测模型：在 CUB 真值框上的框准度、与 OWLv2 的一致度、小鸟、对认鸟的影响），各自附体积与本机测速；另有数据集说明。
-> 附 11,172 种鸟的名录矩阵、不依赖 gardener 的最小推理示例、全部评测清单和逐图结果。蒸馏出的小学生模型离原版差很远，只公开结果不发权重。
+> 附 11,172 种鸟的名录矩阵、不依赖 gardener 的最小推理示例、全部评测清单和逐图结果。
+> 评测有三套：加州 42 种（Gardener 原有）、美加中 228 种、全球 138 个国家 962 种（2026 年照片，随机抽种）。
+> 全球集上原版第一名 77.2%，8 位版 77.4%，推荐组合 77.7% 且识别耗时约减半。
+> 蒸馏出的小学生模型离原版差很远，只公开结果不发权重。
 > 鸟眼鸟嘴和飞行两个小头在另一个仓库（权重仅限非商用）。
 
 ## What is here
@@ -47,13 +50,16 @@ Which species, given the bird. Everything else fixed: gardener's pipeline (SigLI
 
 int8 changes no answer from right to wrong with the prior and one without; the students are far behind and not released.
 
-**A wider second set** (`eval/inat2026.csv`: 637 photos of 228 species from the US, Canada and China, all 2026) is
-harder: the original scores 82.3 % / 92.8 % with the location prior and 78.8 % / 90.7 % without; the int8 tower
-82.6 % / 92.5 %. China is the weak country (image-only top-1 67 % against 82-84 % for the US and Canada).
+**Worldwide** (`eval/inat-global.csv`: 2,632 photos of 962 species from 138 countries, all taken in 2026, species
+drawn at random from every bird iNaturalist knows) the task is much harder: the original scores 77.2 % / 92.3 % with
+the location prior and 66.4 % / 87.7 % without it; the int8 tower 77.4 % / 92.2 %. A second set of the US, Canada and
+China (`eval/inat2026.csv`, 637 photos of 228 species) sits in between: 82.3 % / 92.8 % original, 82.6 % / 92.5 % int8.
+Asia is the weakest region (image-only top-1 54 % worldwide; China 67 % on the second set).
 
-**Location prior.** On the same crops of the second set, GBIF record counts by state/province and month (a small
-offline table, cite GBIF) tie BirdNET geo: top-1 83.9 % against 83.7 %, top-5 94.3 % against 93.4 %, but 1.5 points
-lower on the least-observed third of species. A replacement with a clearer licence, not a gain (docs/results.md A7).
+**Location prior.** On the same crops of the worldwide set, GBIF record counts by country (state/province where the
+table has them) and month, a small offline table, beat BirdNET geo: top-1 78.5 % against 75.7 %, top-5 93.8 % against
+92.5 %, level or ahead in every region and on the least-observed species. On the US/Canada/China set the two tie.
+Details and caveats: docs/results.md A7.
 
 ### Finding the bird (detector)
 
@@ -126,8 +132,9 @@ The evaluation set is gardener's: 1,571 research-grade iNaturalist photos (1,046
 of 22), up to 25 per species, almost all from California and taken in September 2026, 500 px, licences CC BY-NC
 1,402 / CC BY 120 / CC0 49; the list with licences, attribution and sha256 is `eval/groundtruth.csv`, and
 `eval/fetch_photos.py` downloads the photos (not redistributed here). Box accuracy uses CUB-200-2011 (not
-redistributed). A second, wider set (`eval/inat2026.csv`, 637 photos of 228 species from the US, Canada and China,
-all taken in 2026, chosen at random from those countries' lists) is listed the same way. Details, biases and the
+redistributed). Two wider sets are listed the same way: worldwide (`eval/inat-global.csv`, 2,632 photos of 962
+species from 138 countries) and US/Canada/China (`eval/inat2026.csv`, 637 photos of 228 species), all taken in 2026,
+species chosen at random. Details, biases and the
 training data: [docs/data.md](docs/data.md).
 
 ### Which to pick
@@ -135,8 +142,9 @@ training data: [docs/data.md](docs/data.md).
 - **Same answers, smaller file:** the int8 BioCLIP image tower (0.63 GB) named the bird as the original did on
   1,045 of 1,046 bird photos, with the same top-1 and top-5 rates.
 - **Recommended pipeline:** RT-DETRv2 r50 with OWLv2 (int8, no text tower) as the fallback, and the int8 tower in
-  fp16: on the second set 82.3 % / 93.2 % against the original's 82.3 % / 92.8 %, identify median 131 ms against
-  200 ms (docs/results.md C1).
+  fp16: worldwide 99.6 % found, 77.7 % / 92.4 % against the original's 99.3 %, 77.2 % / 92.3 %, identify median
+  113 ms against 205 ms (docs/results.md C1). Models on disk: 172 + 92 + 633 MB + the 22 MB names matrix, against
+  620 + 3,945 MB; the SigLIP2 gate of gardener's pipeline (1.5 GB) is unchanged in both.
 - **Highest bird-finding rate, and fast:** RT-DETRv2 r50 with OWLv2 as the fallback (99.5 % found, top-1 92.5 %;
   OWLv2 ran on 14 of 1,046 bird photos), or D-FINE nano with the fallback (99.3 %, 92.3 %; 15 MB first stage).
 - **One detector only, most birds found:** OWLv2 or its int8 file (99.0 %); int8 is 156 MB instead of 620 MB

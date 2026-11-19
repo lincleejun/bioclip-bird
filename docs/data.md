@@ -44,6 +44,36 @@ Photographers = distinct names in the attribution column.
   and a sha256; `python eval/fetch_photos.py` downloads them from iNaturalist (one request a second; checked on 3 photos
   against the live API).
 
+## Worldwide evaluation set (`eval/inat-global.csv`)
+
+The set to read first for "how well does it name a bird anywhere". Never trained on.
+`./run eval/build_global.py` (one API call or photo a second; API answers cached in `data/`).
+
+**How it was chosen.** 1,200 species drawn at random (seed 2026) from all 11,037 active, non-extinct bird species
+iNaturalist lists. For each, research-grade observations made anywhere in 2026 with a CC0 / CC BY / CC BY-NC photo;
+of the newest 60, up to 3 picked at random, each by a different observer; one photo per observation at "medium" size
+(500 px). Left out as for the second set: every observation and photo the students trained on, the first set's, and
+any observation by the same person of the same species on the same day as a training photo. 962 of the 1,200 species
+had a usable observation. Each photo's country is its observation's iNaturalist country (38 photos have none, mostly
+at sea).
+
+| Region (rough coordinate boxes) | Photos | Species |
+|---|---|---|
+| Americas | 1,227 | 441 |
+| Asia | 621 | 254 |
+| Africa | 493 | 193 |
+| Oceania | 195 | 75 |
+| Europe | 96 | 44 |
+| All | 2,632 | 962 (3 photos for 808, 2 for 54, 1 for 100) |
+
+- **Countries:** 138; most photos from Brazil 242, the US 149, Australia 148, South Africa 115, Colombia 114,
+  India 114, Indonesia 112. Observers: 1,807.
+- **When:** every month of 2026 so far, 152-442 photos a month (most in October and November).
+- **Licences:** CC BY-NC 2,262, CC BY 282, CC0 88.
+- **Known biases:** a species needed a 2026 observation, so the set leans to commoner species (238 of 1,200 drawn
+  had none); Europe has few species, as it has few bird species; still one source (iNaturalist, 500 px).
+- **Photos are not redistributed:** `python eval/fetch_photos.py inat-global.csv` downloads them.
+
 ## Second evaluation set (`eval/inat2026.csv`)
 
 Built to test what the first set cannot: more species, three countries, uncommon birds. Never trained on.

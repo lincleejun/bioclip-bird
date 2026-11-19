@@ -190,18 +190,31 @@ Two guards. The evaluation photos are research-grade iNaturalist observations, w
 own record is taken out of its region and month before scoring (the "own records left in" rows show the
 difference). GBIF names are matched to AviList by name, GBIF synonyms, gardener's synonyms and a unique epithet;
 gardener's renames of a lumped taxon (*Circus cyaneus* -> *C. hudsonius*, *Tyto alba* -> *T. furcata*) apply only in
-the Americas. Still on no list of their region in any month: 24 crops of the first set (all *Bubo virginianus*) and
-29 of the second (14 species, at most 3 crops each); the hard list counts them as misses.
+the Americas. Region: the photo's state or province where the GBIF table has one (the first two sets; worldwide
+only for the US, Canada, China, Australia, Brazil, India, Russia, South Africa and Indonesia), else its country (data/rarity-global for the
+worldwide set); 38 worldwide photos with no country get no GBIF prior. Still on no list of their region in any
+month: 24 crops of the first set (all *Bubo virginianus*), 29 of the second (14 species) and 135 of the worldwide set
+(58 species, many of them seabirds); the hard list counts them as misses.
 
-| Prior | First set (n = 1,039; California) top-1 / top-5 | Second set (n = 632; US, Canada, China) top-1 / top-5 |
-|---|---|---|
-| none | 87.9 % / 96.9 % | 79.1 % / 91.6 % |
-| BirdNET geo (gardener) | 92.1 % / 97.9 % | 83.7 % / 93.4 % |
-| GBIF soft, beta 0.5 | 94.4 % / 98.2 % | 82.9 % / 93.8 % |
-| GBIF soft, beta 1.0 | 95.5 % / 98.8 % | 83.9 % / 94.3 % |
-| GBIF hard list | 92.5 % / 96.2 % | 82.9 % / 92.7 % |
-| GBIF soft, beta 1.0, own records left in | 95.5 % / 98.8 % | 83.9 % / 94.3 % |
-| GBIF hard list, own records left in | 92.5 % / 96.2 % | 83.5 % / 93.4 % |
+| Prior | First set (n = 1,039; California) top-1 / top-5 | Second set (n = 632; US, Canada, China) top-1 / top-5 | Worldwide set (n = 2,614; 138 countries) top-1 / top-5 |
+|---|---|---|---|
+| none | 87.9 % / 96.9 % | 79.1 % / 91.6 % | 66.6 % / 88.3 % |
+| BirdNET geo (gardener) | 92.1 % / 97.9 % | 83.7 % / 93.4 % | 75.7 % / 92.5 % |
+| GBIF soft, beta 0.5 | 94.4 % / 98.2 % | 82.9 % / 93.8 % | 76.1 % / 92.5 % |
+| GBIF soft, beta 1.0 | 95.5 % / 98.8 % | 83.9 % / 94.3 % | 78.5 % / 93.8 % |
+| GBIF hard list | 92.5 % / 96.2 % | 82.9 % / 92.7 % | 78.3 % / 93.0 % |
+| GBIF soft, beta 1.0, own records left in | 95.5 % / 98.8 % | 83.9 % / 94.3 % | 78.6 % / 93.8 % |
+| GBIF hard list, own records left in | 92.5 % / 96.2 % | 83.5 % / 93.4 % | 78.3 % / 93.1 % |
+
+Worldwide by region (rough coordinate boxes) and by how often iNaturalist has observed the species (top-1;
+`priors-global.md` has top-5 too):
+
+| Prior | Americas (1,218) | Europe (96) | Africa (490) | Asia (616) | Oceania (194) | least observed third (872) | middle (871) | most observed (871) |
+|---|---|---|---|---|---|---|---|---|
+| none | 70.4 % | 89.6 % | 68.6 % | 54.1 % | 66.5 % | 50.0 % | 68.4 % | 81.4 % |
+| BirdNET geo | 79.6 % | 93.8 % | 76.3 % | 65.3 % | 73.7 % | 59.6 % | 78.5 % | 88.9 % |
+| GBIF soft, beta 1.0 | 80.6 % | 93.8 % | 79.0 % | 72.1 % | 76.3 % | 65.6 % | 79.9 % | 89.9 % |
+| GBIF hard list | 80.2 % | 92.7 % | 80.4 % | 71.6 % | 74.7 % | 67.8 % | 79.2 % | 87.8 % |
 
 On the second set by group (top-1; `priors-e2.md` has top-5 too):
 
@@ -213,14 +226,14 @@ On the second set by group (top-1; `priors-e2.md` has top-5 too):
 | GBIF hard list | 85.3 % | 74.7 % | 85.6 % | 72.0 % | 87.3 % | 89.5 % |
 | GBIF hard list, own records left in | 85.3 % | 76.7 % | 85.9 % | 73.0 % | 87.3 % | 90.4 % |
 
-Read: the first set flatters any prior that favours common birds (it holds 42 common California species). On the
-wider second set the GBIF soft prior ties BirdNET on top-1 (83.9 % against 83.7 %) and is ahead on top-5, but is
-1.5 points behind on the least-observed third of species, which a count-based prior pushes down; taking the photos'
-own records out changes none of its numbers. The hard list's apparent edge on China and rare species was largely
-the photos' own records. So GBIF counts can replace BirdNET geo at about the same accuracy, with a clearer licence
-(cite GBIF.org) and a small offline table for the phone; they are not an accuracy gain. China is the weak country
-with or without a prior (67.3 % top-1 image-only, against 82-84 % for the US and Canada).
-`eval/results/priors-e1.md`, `priors-e2.md`.
+Read: worldwide, the GBIF soft prior is 2.8 points ahead of BirdNET geo on top-1 (78.5 % against 75.7 %) and 1.3 on
+top-5, ahead or level in every region and on the least-observed species too (65.6 % against 59.6 %); taking the
+photos' own records out moves it by 0.1. On the second set (US, Canada, China) the two tie, with GBIF 1.5 points
+behind on that set's least-observed third; on the first set (42 common California species) any prior that favours
+common birds looks good. Beta was not tuned: 1.0 is the larger of the two values tried. So GBIF record counts can
+replace BirdNET geo: at least as accurate, ahead worldwide, with a clearer licence (cite GBIF.org) and an offline
+table for the phone. Asia is the weakest region (54.1 % top-1 image-only), and China within it on the second set.
+`eval/results/priors-e1.md`, `priors-e2.md`, `priors-global.md`.
 
 ## B. Finding the bird
 
@@ -377,7 +390,7 @@ on 80 evaluation photos (`mobile/README.md`).
 
 ## C. Whole pipeline
 
-### C1. The second evaluation set, and the recommended combination
+### C1. The wider evaluation sets, and the recommended combination
 
 The second set (`eval/inat2026.csv`, docs/data.md: 637 photos of 228 species from the US, Canada and China, all
 taken in 2026) through the whole pipeline (`./evalset.sh`). "Recommended": RT-DETRv2 r50 first with OWLv2 (int8,
@@ -391,8 +404,20 @@ no text tower) as the fallback, and the int8 BioCLIP tower computing in fp16.
 | **recommended** | RT-DETRv2 r50 -> OWLv2 int8 (no text) | int8, fp16 compute | 99.1 % | 82.3 % | 93.2 % | 131 | `e2-best` |
 
 The recommended run handed 32 of 649 detector calls to OWLv2. On this set every variant scores about 10 points below
-the first set (82 % against 92 % top-1): the first set's 42 common California species are easy. The identify times
-were taken one run after another on the same machine, so they compare better than those below, but are still
+the first set (82 % against 92 % top-1): the first set's 42 common California species are easy.
+
+The worldwide set (`eval/inat-global.csv`, docs/data.md: 2,632 photos of 962 species from 138 countries, all 2026):
+
+| Run | Detector | Species model | Bird found | Top-1 | Top-5 | Identify ms, median | Directory |
+|---|---|---|---|---|---|---|---|
+| original | OWLv2 | original | 99.3 % | 77.2 % | 92.3 % | 205 | `eg-teacher` |
+| original, no location prior | OWLv2 | original | 99.3 % | 66.4 % | 87.7 % | 189 | `eg-teacher-no-geo` |
+| int8 tower | OWLv2 | int8, fp16 compute | 99.3 % | 77.4 % | 92.2 % | 182 | `eg-int8-half` |
+| **recommended** | RT-DETRv2 r50 -> OWLv2 int8 (no text) | int8, fp16 compute | 99.6 % | 77.7 % | 92.4 % | 113 | `eg-best` |
+
+Worldwide the recommended run handed 96 of 2,683 detector calls to OWLv2 and found more birds than OWLv2 alone. The
+location prior (BirdNET geo here) is worth 10.8 points of top-1 worldwide, against 3.5 on the second set. The
+identify times of each set's four runs were taken one after another on the same machine, so they compare better than those below, but are still
 whole-pipeline times logged in passing.
 
 ### C2. Times logged in passing (first set)
@@ -432,7 +457,9 @@ evaluation photos; port 8771 free. `eval/agree.py` needs only this repository.
 ./eval_student.sh runs/s-small-2/student.pt [--no-geo]       # -> runs/s-small-2/golden[-no-geo]
 python eval/agree.py species; python eval/agree.py boxes     # A2, A3, B2 from eval/results
 ./run eval/build_eval2.py; ./evalset.sh runs/e2-teacher eval/inat2026.csv [serve.py args] [-- --no-geo]   # C1
+./run eval/build_global.py; ./evalset.sh runs/eg-teacher eval/inat-global.csv [serve.py args] [-- --no-geo]  # C1
 ./run eval/priors.py groundtruth.csv teacher; ./run eval/priors.py inat2026.csv e2-teacher             # A7
+./run eval/priors.py inat-global.csv eg-teacher                                                        # A7
 ./run eval/crops.py                                          # A4
 ./run eval/cub_boxes.py owlv2 owlv2-int8 rtdetr-r50 rtdetr-r18 dfine-small dfine-nano yolov10m yolov10s yolov10n   # B1, needs data/cub/CUB_200_2011
 ./run eval/speed.py all > eval/results/speed/raw.jsonl        # A6, B5 (PyTorch)

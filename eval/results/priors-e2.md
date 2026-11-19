@@ -1,6 +1,6 @@
 # Location priors on the same bird crops (inat2026.csv, boxes of run `e2-teacher`)
 
-632 bird crops of 637 bird photos (5 without a box are left out), 228 species. Regions: {'USA.5_1': 94, 'CAN.2_1': 51, 'USA.44_1': 44, 'USA.3_1': 42, 'CAN.9_1': 39, 'USA.10_1': 31, 'CHN.6_1': 26, 'CAN.11_1': 20} ...; 0 crops fell back to their country (state not matched). Own records taken out: 632.
+632 bird crops of 637 bird photos (5 without a box are left out), 228 species. Regions: {'USA.5_1': 94, 'CAN.2_1': 51, 'USA.44_1': 44, 'USA.3_1': 42, 'CAN.9_1': 39, 'USA.10_1': 31, 'CHN.6_1': 26, 'CAN.11_1': 20} ...; 0 crops at country level (no state/province table or name match), 0 with no known country (no GBIF prior). Own records taken out: 632. GBIF table: data/rarity.
 
 True names with no GBIF record in their region in any month (own records out): 29 crops, *Trogon ambiguus* 3, *Lophospiza trivirgata* 3, *Cistothorus palustris* 3, *Anarhynchus montanus* 3, *Anarhynchus nivosus* 3, *Bubo virginianus* 3, *Enicurus sinensis* 3, *Larus mongolicus* 2, *Larus vegae* 1, *Phyllergates cucullatus* 1, *Tachyspiza soloensis* 1, *Vireo plumbeus* 1, *Phylloscopus intermedius* 1, *Terpsiphone incei* 1.
 

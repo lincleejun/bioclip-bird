@@ -14,4 +14,4 @@ PYTHONUNBUFFERED=1 ./run distill/serve.py --port 8771 $SERVE --allow-root $PWD/e
 for i in $(seq 1 120); do curl -s -m 2 http://127.0.0.1:8771/health >/dev/null && break; sleep 2; done
 (cd $B && uv run -q gardener-engine --url http://127.0.0.1:8771 eval $OUT/list.csv --out $OUT "$@" > $OUT/eval.log 2>&1; echo "exit $?" >> $OUT/eval.log)
 pkill -f "distill/serve.py --port 8771"; sleep 3
-grep -E "^\| [a-z0-9]+ \| bird " $OUT/report.md
+grep -E "^\| [a-z0-9-]+ \| bird " $OUT/report.md
