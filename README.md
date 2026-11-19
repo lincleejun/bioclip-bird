@@ -47,6 +47,14 @@ Which species, given the bird. Everything else fixed: gardener's pipeline (SigLI
 
 int8 changes no answer from right to wrong with the prior and one without; the students are far behind and not released.
 
+**A wider second set** (`eval/inat2026.csv`: 637 photos of 228 species from the US, Canada and China, all 2026) is
+harder: the original scores 82.3 % / 92.8 % with the location prior and 78.8 % / 90.7 % without; the int8 tower
+82.6 % / 92.5 %. China is the weak country (image-only top-1 67 % against 82-84 % for the US and Canada).
+
+**Location prior.** On the same crops of the second set, GBIF record counts by state/province and month (a small
+offline table, cite GBIF) tie BirdNET geo: top-1 83.9 % against 83.7 %, top-5 94.3 % against 93.4 %, but 1.5 points
+lower on the least-observed third of species. A replacement with a clearer licence, not a gain (docs/results.md A7).
+
 ### Finding the bird (detector)
 
 Where the bird is. Everything else fixed (gate, original BioCLIP, prior); only the detector changes. 1,046 bird
@@ -118,12 +126,17 @@ The evaluation set is gardener's: 1,571 research-grade iNaturalist photos (1,046
 of 22), up to 25 per species, almost all from California and taken in September 2026, 500 px, licences CC BY-NC
 1,402 / CC BY 120 / CC0 49; the list with licences, attribution and sha256 is `eval/groundtruth.csv`, and
 `eval/fetch_photos.py` downloads the photos (not redistributed here). Box accuracy uses CUB-200-2011 (not
-redistributed). Details, biases and the training data: [docs/data.md](docs/data.md).
+redistributed). A second, wider set (`eval/inat2026.csv`, 637 photos of 228 species from the US, Canada and China,
+all taken in 2026, chosen at random from those countries' lists) is listed the same way. Details, biases and the
+training data: [docs/data.md](docs/data.md).
 
 ### Which to pick
 
 - **Same answers, smaller file:** the int8 BioCLIP image tower (0.63 GB) named the bird as the original did on
   1,045 of 1,046 bird photos, with the same top-1 and top-5 rates.
+- **Recommended pipeline:** RT-DETRv2 r50 with OWLv2 (int8, no text tower) as the fallback, and the int8 tower in
+  fp16: on the second set 82.3 % / 93.2 % against the original's 82.3 % / 92.8 %, identify median 131 ms against
+  200 ms (docs/results.md C1).
 - **Highest bird-finding rate, and fast:** RT-DETRv2 r50 with OWLv2 as the fallback (99.5 % found, top-1 92.5 %;
   OWLv2 ran on 14 of 1,046 bird photos), or D-FINE nano with the fallback (99.3 %, 92.3 %; 15 MB first stage).
 - **One detector only, most birds found:** OWLv2 or its int8 file (99.0 %); int8 is 156 MB instead of 620 MB

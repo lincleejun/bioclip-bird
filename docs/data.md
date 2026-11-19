@@ -44,6 +44,35 @@ Photographers = distinct names in the attribution column.
   and a sha256; `python eval/fetch_photos.py` downloads them from iNaturalist (one request a second; checked on 3 photos
   against the live API).
 
+## Second evaluation set (`eval/inat2026.csv`)
+
+Built to test what the first set cannot: more species, three countries, uncommon birds. Never trained on.
+`./run eval/build_eval2.py` (one API call or photo a second; the API answers are cached in `data/`).
+
+**How it was chosen.** 500 species drawn at random (seed 2026) from iNaturalist's bird lists of the US, Canada and
+China (`data/inat-raw/species.csv`, 2,179 species); each species was given one of the countries whose list has it,
+at random. For each, the newest research-grade observations of 2026 in that country (iNaturalist API, newest first,
+60 per species), up to 3, each by a different observer, with a CC0 / CC BY / CC BY-NC photo; one photo per
+observation at "medium" size (500 px). Left out: every observation and photo the students trained on, the first
+set's, and any observation by the same person of the same species on the same day as a training photo. 2026 photos
+are newer than BioCLIP 2.5's training data. 228 of the 500 species had at least one usable observation.
+
+| | Photos | Species | Photos per species | Observers |
+|---|---|---|---|---|
+| US | 329 | 114 | | |
+| Canada | 157 | 53 | | |
+| China | 151 | 61 | | |
+| All | 637 | 228 | 3 for 201 species, 2 for 7, 1 for 20 | 532 |
+
+- **Licences:** CC BY-NC 588, CC BY 40, CC0 9.
+- **When:** all 2026; newest first, so 393 photos from November and 100 from October, 2-61 for each earlier month.
+- **Overlap with the first set:** 11 species.
+- **Known biases:** a species needed 2026 observations in its country, so the set leans to commoner species (half
+  of the 500 drawn had none); taking the newest observations puts most photos in late autumn; still one source
+  (iNaturalist, 500 px).
+- **Photos are not redistributed:** `python eval/fetch_photos.py inat2026.csv` downloads them and checks each
+  against its sha256 (checked on 3 photos).
+
 ## CUB-200-2011
 
 Caltech-UCSD Birds-200-2011: 11,788 photos of 200 bird species, each with one bird box and 15 part

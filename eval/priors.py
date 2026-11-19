@@ -158,7 +158,7 @@ def main() -> None:
     if "country" in rows[keep[0]]:
         for c in sorted({rows[p]["country"] for p in keep}):
             groups[f"country {c}"] = [rows[p]["country"] == c for p in keep]
-        obs = {norm(r["scientific"]): sum(int(x.split(":")[1]) for x in r["regions"].split())
+        obs = {norm(r["scientific"]): sum(int(x.split(":")[1]) for x in r["regions"].split(";"))
                for r in csv.DictReader(open(ROOT / "data" / "inat-raw" / "species.csv"))}
         cut = np.quantile([obs.get(norm(rows[p]["scientific"]), 0) for p in keep], [1 / 3, 2 / 3])
         for label, lo, hi in (("least observed third", -1, cut[0]), ("middle third", cut[0], cut[1]), ("most observed third", cut[1], 1e18)):

@@ -3,6 +3,7 @@ data/
 runs/
 models/
 release/
+release-v0.2/
 eval/photos/
 eval/photos2026/
 *.pt

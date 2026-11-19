@@ -178,6 +178,40 @@ CPU and GPU share one memory pool, so read the two memory columns together. The 
 on every compute unit here; on the iOS simulator its default setting returned zeros (ios/README.md), which this
 Mac does not reproduce. Core ML speed on a phone: not measured.
 
+### A7. Location prior: BirdNET geo against GBIF record counts
+
+The location prior is the one part of naming that changes the answer by several points, and BirdNET geo's licence
+is unclear for shipping (CC BY-NC-SA in one place, Apache-2.0 in another). `eval/priors.py` compares, on the same
+crops (each run's best box, int8 tower in fp16): no prior; BirdNET geo through gardener's own posterior; and the GBIF
+record counts of the photo's state or province and month +-1 (`data/rarity`, from `distill/rarity.py`) as a soft
+prior (logit + beta x log share of records) or a hard list (only names with a record). GBIF names are matched to
+AviList by name, synonyms and a unique epithet; 24 (first set) and 25 (second set) crops' true names are still on no
+list of their region, mostly Cooper's Hawk (*Accipiter cooperii* in GBIF), and count as misses for the hard list.
+
+| Prior | First set (n = 1,039; California) top-1 / top-5 | Second set (n = 632; US, Canada, China) top-1 / top-5 |
+|---|---|---|
+| none | 87.9 % / 96.9 % | 79.1 % / 91.6 % |
+| BirdNET geo (gardener) | 92.1 % / 97.9 % | 83.7 % / 93.4 % |
+| GBIF soft, beta 0.5 | 94.4 % / 98.2 % | 83.1 % / 93.8 % |
+| GBIF soft, beta 1.0 | 95.5 % / 98.8 % | 83.9 % / 94.3 % |
+| GBIF hard list | 92.5 % / 96.2 % | 83.5 % / 93.8 % |
+
+On the second set by group (top-1; `priors-e2.md` has top-5 too):
+
+| Prior | Canada (156) | China (150) | US (326) | least observed third of species (211) | middle (212) | most observed (209) |
+|---|---|---|---|---|---|---|
+| none | 84.0 % | 67.3 % | 82.2 % | 64.0 % | 84.9 % | 88.5 % |
+| BirdNET geo | 89.1 % | 74.0 % | 85.6 % | 71.6 % | 86.3 % | 93.3 % |
+| GBIF soft, beta 1.0 | 90.4 % | 74.0 % | 85.3 % | 70.1 % | 87.3 % | 94.3 % |
+| GBIF hard list | 85.3 % | 76.7 % | 85.9 % | 73.0 % | 87.3 % | 90.4 % |
+
+Read: the first set flatters any prior that favours common birds (it holds 42 common California species). On the
+wider second set the GBIF soft prior ties BirdNET on top-1 (83.9 % against 83.7 %) and is ahead on top-5, but is
+1.5 points behind on the least-observed third of species, which a count-based prior pushes down. So GBIF counts can
+replace BirdNET geo at about the same accuracy, with a clearer licence (cite GBIF.org) and a small offline table
+for the phone; they are not an accuracy gain. China is the weak country with or without a prior (67.3 % top-1
+image-only, against 82-84 % for the US and Canada). `eval/results/priors-e1.md`, `priors-e2.md`.
+
 ## B. Finding the bird
 
 ### B1. Against true boxes: CUB-200-2011 test split
@@ -331,7 +365,27 @@ weights assigned; the non-persistent position ids and box bias recomputed) it lo
 1.37 GB, with the same 40 of 40 detections. Core ML D-FINE nano matches the transformers model
 on 80 evaluation photos (`mobile/README.md`).
 
-## C. Whole pipeline, per photo (logged in passing)
+## C. Whole pipeline
+
+### C1. The second evaluation set, and the recommended combination
+
+The second set (`eval/inat2026.csv`, docs/data.md: 637 photos of 228 species from the US, Canada and China, all
+taken in 2026) through the whole pipeline (`./evalset.sh`). "Recommended": RT-DETRv2 r50 first with OWLv2 (int8,
+no text tower) as the fallback, and the int8 BioCLIP tower computing in fp16.
+
+| Run | Detector | Species model | Bird found | Top-1 | Top-5 | Identify ms, median | Directory |
+|---|---|---|---|---|---|---|---|
+| original | OWLv2 | original | 99.1 % | 82.3 % | 92.8 % | 200 | `e2-teacher` |
+| original, no location prior | OWLv2 | original | 99.1 % | 78.8 % | 90.7 % | 190 | `e2-teacher-no-geo` |
+| int8 tower | OWLv2 | int8, fp16 compute | 99.1 % | 82.6 % | 92.5 % | 192 | `e2-int8-half` |
+| **recommended** | RT-DETRv2 r50 -> OWLv2 int8 (no text) | int8, fp16 compute | 99.1 % | 82.3 % | 93.2 % | 131 | `e2-best` |
+
+The recommended run handed 32 of 649 detector calls to OWLv2. On this set every variant scores about 10 points below
+the first set (82 % against 92 % top-1): the first set's 42 common California species are easy. The identify times
+were taken one run after another on the same machine, so they compare better than those below, but are still
+whole-pipeline times logged in passing.
+
+### C2. Times logged in passing (first set)
 
 The engine logs only two times per photo: decoding and "identify" (gate + detector + species + prior together).
 They were taken while other jobs shared the machine to different degrees, so they compare poorly between runs;
@@ -367,6 +421,8 @@ evaluation photos; port 8771 free. `eval/agree.py` needs only this repository.
 ./detbench.sh owlv2-int8 dfine-nano rtdetr-r50 yolov10n      # -> runs/det-NAME/golden
 ./eval_student.sh runs/s-small-2/student.pt [--no-geo]       # -> runs/s-small-2/golden[-no-geo]
 python eval/agree.py species; python eval/agree.py boxes     # A2, A3, B2 from eval/results
+./run eval/build_eval2.py; ./evalset.sh runs/e2-teacher eval/inat2026.csv [serve.py args] [-- --no-geo]   # C1
+./run eval/priors.py groundtruth.csv teacher; ./run eval/priors.py inat2026.csv e2-teacher             # A7
 ./run eval/crops.py                                          # A4
 ./run eval/cub_boxes.py owlv2 owlv2-int8 rtdetr-r50 rtdetr-r18 dfine-small dfine-nano yolov10m yolov10s yolov10n   # B1, needs data/cub/CUB_200_2011
 ./run eval/speed.py all > eval/results/speed/raw.jsonl        # A6, B5 (PyTorch)

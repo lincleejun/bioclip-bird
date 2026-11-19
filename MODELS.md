@@ -10,6 +10,7 @@ the code, not these upstream works.
 | `bioclip-2.5-vith14-visual-fp16.safetensors` | 1,264,197,296 | `b629981cfa40eee16ff831c9516b00181ecb105e8e6c5c64c12df9ded78549ae` |
 | `bioclip-2.5-vith14-avilist-2026-names.npz` | 21,597,460 | `c69f298195f72d14747145bb92b92b8d98a71866066f644965d936b1ea679e5f` |
 | `owlv2-base-patch16-ensemble-int8.safetensors` | 155,652,122 | `e07efa451b90aece527cb4e78ac1761885de6bc41d4c0d35b171da9301ad5679` |
+| `owlv2-base-patch16-ensemble-vision-int8.safetensors` (release v0.2) | 91,971,770 | `1f4231618f4f5c5f7029d3e0694370ef07429af5342cd2eb9cbec1d6d72914a7` |
 
 ## BioCLIP 2.5 image tower, int8 and fp16
 
@@ -52,6 +53,17 @@ the code, not these upstream works.
   the weights from this file only; the processor (tokenizer and image settings) still comes from the upstream
   repository's small config files.
 - **Training:** none.
+
+## OWLv2, int8, without the text tower (release v0.2)
+
+- **Upstream and licence:** as above (Apache-2.0); a modified version of that work.
+- **What it is:** the int8 file above without the text tower and text projection, plus `query_embeds`, the text
+  vectors of gardener's 47 detector prompts (file metadata `prompts`), worked out once by the full int8 model and
+  stored as fp16. 156 MB -> 92 MB. Written by `./run distill/detectors.py --vision`.
+- **Loading:** `distill/detectors.py OwlVision` (image processor settings from the upstream repository). It accepts
+  only the 47 stored prompts; another prompt needs the full file.
+- **Checked:** same boxes and prompts as the full int8 file on 40 bird and 20 mammal photos, box corners identical,
+  confidences within 0.0001.
 
 ## Not released here
 

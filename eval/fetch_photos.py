@@ -1,6 +1,7 @@
 """Download the evaluation photos listed in eval/groundtruth.csv from iNaturalist (stdlib only).
 
-  python eval/fetch_photos.py            # -> eval/photos/SPECIES/OBSERVATION_PHOTO.jpg; rerun to resume
+  python eval/fetch_photos.py                  # eval/groundtruth.csv -> eval/photos/SPECIES/OBSERVATION_PHOTO.jpg
+  python eval/fetch_photos.py inat2026.csv     # the second set -> eval/photos2026/...; rerun either to resume
 
 The photos are not redistributed here: each keeps its own licence (license and attribution columns). File names
 are OBSERVATION_PHOTO.jpg; the script asks the iNaturalist API for those observations (200 per call), takes the
@@ -12,6 +13,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import sys
 import json
 import time
 import urllib.request
@@ -31,7 +33,7 @@ def get(url: str) -> bytes:
 
 
 def main() -> None:
-    with open(HERE / "groundtruth.csv", newline="") as f:
+    with open(HERE / (sys.argv[1] if len(sys.argv) > 1 else "groundtruth.csv"), newline="") as f:
         rows = [r for r in csv.DictReader(f) if not (HERE / r["path"]).exists()]
     ids = {r["path"]: Path(r["path"]).stem.split("_") for r in rows}
     obs = sorted({o for o, _ in ids.values()})
