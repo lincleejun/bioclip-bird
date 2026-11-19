@@ -37,20 +37,37 @@ def pack(state: dict, int8: bool) -> dict:
     return out
 
 
-def load(path: str) -> dict:
-    return unpack(load_file(path))
+def load(path: str, dtype: torch.dtype = torch.float32) -> dict:
+    return unpack(load_file(path), dtype)
 
 
-def unpack(raw: dict) -> dict:
-    """pack() undone: int8 rows times their scale, as float32; everything else as stored."""
+def unpack(raw: dict, dtype: torch.dtype = torch.float32) -> dict:
+    """pack() undone: int8 rows times their scale, in `dtype` (float32 by default); other floats cast to `dtype`.
+    In float16 the result is the same as computing in float32 and rounding (int8 x float16 is exact in float32).
+    Consumes `raw` as it goes, so only one copy of the weights is held at a time."""
     out = {}
-    for k, v in raw.items():
+    for k in [k for k in raw if not k.endswith(".s8")]:
+        v = raw.pop(k)
         if k.endswith(".q8"):
-            s = raw[k[:-3] + ".s8"].float()
-            out[k[:-3]] = v.float() * s.view(-1, *[1] * (v.ndim - 1))
-        elif not k.endswith(".s8"):
-            out[k] = v
+            s = raw.pop(k[:-3] + ".s8").to(dtype)
+            out[k[:-3]] = v.to(dtype) * s.view(-1, *[1] * (v.ndim - 1))
+        else:
+            out[k] = v.to(dtype) if v.is_floating_point() else v
     return out
+
+
+def build(path: str, device: str = DEV, half: bool | None = None):
+    """The image tower from a slim file alone (no original checkpoint), weights in their final dtype from the start:
+    the module is made on the meta device and the unpacked weights are assigned, never copied. half: compute in
+    float16 (default: on a GPU yes, on the CPU no)."""
+    import open_clip
+    from gardener.service.adapters.bioclip import snapshot_dir
+    half = device != "cpu" if half is None else half
+    cfg = json.loads((Path(snapshot_dir()) / "open_clip_config.json").read_text())
+    with torch.device("meta"):
+        model = open_clip.CLIP(**cfg["model_cfg"]).visual
+    model.load_state_dict(load(path, torch.float16 if half else torch.float32), assign=True)
+    return model.eval().to(device)
 
 
 def square(im: Image.Image) -> Image.Image:
@@ -64,12 +81,9 @@ def square(im: Image.Image) -> Image.Image:
 def tower(layers: list[int]):
     """The int8 image tower computing in float16 and a function images -> {layer: (n, 256, 1280) float16 patch tokens}.
     Images must already be 224 x 224 (square())."""
-    import open_clip
     from gardener.service.adapters.bioclip import snapshot_dir
     cfg = json.loads((Path(snapshot_dir()) / "open_clip_config.json").read_text())
-    model = open_clip.CLIP(**cfg["model_cfg"]).visual
-    model.load_state_dict(load(str(SLIM)))
-    model = model.eval().half().to(DEV)
+    model = build(str(SLIM), DEV, half=True)
     mean, std = (torch.tensor(cfg["preprocess_cfg"][k], device=DEV).view(1, 3, 1, 1) for k in ("mean", "std"))
     got = {}
     for n in layers:

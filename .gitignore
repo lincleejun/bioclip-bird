@@ -4,6 +4,7 @@ runs/
 models/
 release/
 eval/photos/
+eval/photos2026/
 *.pt
 *.safetensors
 __pycache__/

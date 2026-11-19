@@ -16,7 +16,8 @@ Smaller models for naming birds in photos, measured end to end on 1,571 iNatural
    mammals 91.6 % / 95.4 % against 91.4 % / 95.4 %.
 2. **Bird names matrix**: 11,172 AviList v2026 species as BioCLIP 2.5 text vectors (22 MB), plus the logit
    scale (98.86). With the image tower it names a bird; no text tower needed.
-3. **OWLv2 detector, int8** (156 MB, from 620 MB): same bird detection rate on the evaluation set.
+3. **OWLv2 detector, int8** (156 MB, from 620 MB): same bird detection rate on the evaluation set; and the same
+   without its text tower (92 MB), with the text vectors of gardener's 47 prompts stored in the file.
 4. **Evaluation**: the 1,571-photo list with licences and a download script, every run's report and
    per-photo predictions, and the results write-up.
 
@@ -71,6 +72,17 @@ The COCO detectors (all but OWLv2) find birds only, not mammals. Their effect on
 table in docs/results.md (B4): bird top-1 92.4 % with OWLv2, 92.2 % with OWLv2 int8, 91.1 % with D-FINE nano,
 78.9 % with YOLOv10 n.
 
+**Cascade: a small detector first, OWLv2 only when it finds nothing** (whole pipeline, same 1,046 bird photos):
+
+| Detector | Bird found | Top-1 | Top-5 | Bird photos that needed OWLv2 |
+|---|---|---|---|---|
+| OWLv2 alone | 99.0 % | 92.4 % | 96.9 % | all |
+| D-FINE nano, then OWLv2 int8 | 99.3 % | 92.3 % | 96.5 % | 19 of 1,046 |
+| RT-DETRv2 r50, then OWLv2 int8 | 99.5 % | 92.5 % | 97.2 % | 14 of 1,046 |
+
+Mammal photos go to OWLv2 as before (the COCO models answer only "a bird"). The fallback can be OWLv2 without its
+text tower: 92 MB instead of 156 MB, same boxes (docs/results.md B4).
+
 ### Size and speed
 
 Each model alone, one fresh process per measurement, Apple M4 Max 64 GB, PyTorch (MPS = the Mac's GPU).
@@ -85,8 +97,9 @@ Measured twice; the two passes agree within about 5 %, the numbers are the first
 | int8 image tower | 0.63 GB | 47 ms / 32 | 42 ms / 39 | 194 ms / 7.7 | 7.2 GB |
 | int8, Core ML on the Mac (Neural Engine) | 0.63 GB | 71 ms (batch 1) | | 99 ms | 1.0 GB |
 
-int8 is a storage format: it computes as fast as the original and, as loaded today (unpacked to fp32 first), peaks
-higher in memory. fp16 compute is 20 % faster at no cost in answers (A2 in docs/results.md).
+int8 is a storage format: it computes as fast as the original. The peak memory above is from before a loading
+fix; loading the int8 file straight into fp16 now takes 1.6 s and peaks at 2.4 GB on the GPU path (same weights bit
+for bit; A6). fp16 compute is 20 % faster at no cost in answers (A2 in docs/results.md).
 
 | Detector (whole photo in, bird boxes out) | File | MPS ms per photo, median / p90 | CPU ms per photo |
 |---|---|---|---|
@@ -111,8 +124,10 @@ redistributed). Details, biases and the training data: [docs/data.md](docs/data.
 
 - **Same answers, smaller file:** the int8 BioCLIP image tower (0.63 GB) named the bird as the original did on
   1,045 of 1,046 bird photos, with the same top-1 and top-5 rates.
-- **Highest bird-finding rate:** OWLv2 or its int8 file (99.0 % of bird photos given a box); int8 is 156 MB
-  instead of 620 MB, with top-1 92.2 % instead of 92.4 %.
+- **Highest bird-finding rate, and fast:** RT-DETRv2 r50 with OWLv2 as the fallback (99.5 % found, top-1 92.5 %;
+  OWLv2 ran on 14 of 1,046 bird photos), or D-FINE nano with the fallback (99.3 %, 92.3 %; 15 MB first stage).
+- **One detector only, most birds found:** OWLv2 or its int8 file (99.0 %); int8 is 156 MB instead of 620 MB
+  (92 MB without the text tower), with top-1 92.2 % instead of 92.4 %.
 - **Smallest detector with a permissive licence:** D-FINE nano (15 MB, Apache-2.0): 97.9 % found, top-1 91.1 %;
   on CUB's true boxes 98.3 % of its boxes overlap the truth by IoU 0.5 or more; 18 ms a photo on the Mac's GPU
   against OWLv2's 132 ms. It finds birds only.

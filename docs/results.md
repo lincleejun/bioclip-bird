@@ -159,8 +159,21 @@ the passes agree within about 5 %; the machine was not idle: another session was
 | Core ML 8-bit, on this Mac | CPU and Neural Engine | 9.3 | 71.3 / 71.7 | - | 1.04 | - |
 
 The file format changes the size on disk, not the compute: all three run at the same speed. fp16 compute is about
-20 % faster than fp32 and halves the GPU memory, with no change in answers (A2). The int8 file peaks highest in
-resident memory because `slim.load()` unpacks every weight to fp32 on the CPU before moving it. On Apple Silicon
+20 % faster than fp32 and halves the GPU memory, with no change in answers (A2). In this table the int8 file
+peaked highest in resident memory because loading unpacked every weight to fp32 on the CPU, next to a second
+fp32 copy in the freshly built module.
+
+**Loading fixed since** (`slim.build`): the module is built on the meta device and each weight is unpacked straight
+into its final dtype and assigned, so only one copy exists. Same weights bit for bit (all tensors `torch.equal`),
+same outputs (max difference 0.0). int8 file, measured the same way afterwards:
+
+| int8 file | Load s | Peak RSS GB | before |
+|---|---|---|---|
+| MPS, fp16 compute | 1.6 | 2.43 | 5.8 s, 7.24 GB |
+| MPS, fp32 compute | 1.8 | 3.82 | 6.3 s, 7.24 GB |
+| CPU, fp32 compute | 1.6 | 4.23 | 5.8 s, 7.24 GB |
+
+On Apple Silicon
 CPU and GPU share one memory pool, so read the two memory columns together. The Core ML model gave non-zero output
 on every compute unit here; on the iOS simulator its default setting returned zeros (ios/README.md), which this
 Mac does not reproduce. Core ML speed on a phone: not measured.
@@ -256,6 +269,26 @@ detectors keep only "bird", so they find almost no mammals (their mammal rows ar
 The OWLv2 int8 run loads its weights from the released file only; an earlier run that rounded the weights in
 memory gave the same best box (to 3 decimals) and first species on all 1,571 photos.
 
+**Cascades** (`distill/detectors.py Cascade`, `./detbench.sh cascade-dfine-nano cascade-rtdetr-r50`): the COCO
+detector first, OWLv2 int8 only for a frame where it found nothing at the asked threshold. The COCO models answer
+only "a bird", so every mammal ask also goes to OWLv2 and mammals keep OWLv2's finding rate.
+
+| Cascade | Bird found | Top-1 | Top-5 | Mammals top-1 / top-5 | Detector calls handed to OWLv2 | Directory |
+|---|---|---|---|---|---|---|
+| OWLv2 alone (reference) | 99.0 % | 92.4 % | 96.9 % | 91.4 % / 95.4 % | all | `teacher` |
+| D-FINE nano, then OWLv2 int8 | 99.3 % | 92.3 % | 96.5 % | 91.2 % / 95.6 % | 580 of 1,641 | `det-cascade-dfine-nano` |
+| RT-DETRv2 r50, then OWLv2 int8 | 99.5 % | 92.5 % | 97.2 % | 91.0 % / 95.2 % | 575 of 1,627 | `det-cascade-rtdetr-r50` |
+
+Most hand-offs are the mammal photos (525) and second asks; replaying the published per-photo results the same
+way, OWLv2 was needed on 19 (D-FINE nano) and 14 (RT-DETRv2 r50) of the 1,046 bird photos. On bird photos the
+detector time is therefore close to the COCO model's own (B5: 18 or 37 ms against OWLv2's 132 ms on the GPU).
+
+**OWLv2 without its text tower** (`owlv2-base-patch16-ensemble-vision-int8.safetensors`, 92 MB; `./run
+distill/detectors.py --vision`): the int8 image half plus the text vectors of gardener's 47 prompts, worked out
+once by the full model. On 40 bird photos (bird prompt) and 20 mammal photos (37 mammal prompts) it gave the same
+boxes and prompts as the 156 MB int8 file, box corners identical, confidences within 0.0001 (the stored vectors are
+fp16). A prompt outside the 47 needs the full file. The cascades use it when it is present.
+
 ### B5. Size and speed of the detectors
 
 | Detector | Model | Licence | Size | Input | Runtime here |
@@ -292,8 +325,10 @@ image decoding not; 5 warm-up photos. First pass:
 | D-FINE nano, Core ML on this Mac | CPU and GPU | 0.3 | 4.0 / 4.1 | 0.46 | - |
 | D-FINE nano, Core ML on this Mac | CPU and Neural Engine | 0.4 | 15.9 / 17.9 | 0.44 | - |
 
-The Core ML rows take a 640 x 640 image already resized (model call only). OWLv2 int8 loads slower and peaks
-higher than OWLv2 for the same reason as the int8 tower in A6. Core ML D-FINE nano matches the transformers model
+The Core ML rows take a 640 x 640 image already resized (model call only). OWLv2 int8 loaded slower and peaked
+higher than OWLv2 for the same reason as the int8 tower in A6; with the same fix (built on the meta device,
+weights assigned; the non-persistent position ids and box bias recomputed) it loads in 2.1 s and peaks at
+1.37 GB, with the same 40 of 40 detections. Core ML D-FINE nano matches the transformers model
 on 80 evaluation photos (`mobile/README.md`).
 
 ## C. Whole pipeline, per photo (logged in passing)

@@ -55,13 +55,8 @@ def species(variant: str, dev: str, prec: str) -> dict:
         from gardener.service.adapters.bioclip import BioCLIP
         model = BioCLIP(dev).model.visual
     else:
-        import open_clip
-        from gardener.service.adapters.bioclip import snapshot_dir
-
         from distill import slim
-        cfg = json.loads((Path(snapshot_dir()) / "open_clip_config.json").read_text())
-        model = open_clip.CLIP(**cfg["model_cfg"]).visual
-        model.load_state_dict(slim.load(str(ROOT / f"models/bioclip-2.5-vith14-visual-{variant}.safetensors")))
+        model = slim.build(str(ROOT / f"models/bioclip-2.5-vith14-visual-{variant}.safetensors"), dev, half=prec == "fp16")
     dt = torch.float16 if prec == "fp16" else torch.float32
     model = model.eval().to(dev, dt)
     sync(dev)
