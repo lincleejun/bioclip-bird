@@ -166,7 +166,8 @@ crop.jpg
 The input is a photo cropped around one bird; the output is the image-only top five (no location prior).
 Add `--parts parts.safetensors --flight flight.safetensors` from bioclip-bird-heads for beak/eye points and
 P(flying). The example needs no gardener code, no original checkpoint and no network (tested with open_clip
-3.3.0; it uses open_clip's internal `_build_vision_tower`). Checked on 40 bird crops of
+3.3.0; it uses open_clip's internal `_build_vision_tower`). On a GPU it computes in fp16 since 2026-11-18;
+the following check was made before that, in fp32 (two crops re-run in fp16 gave the same output). Checked on 40 bird crops of
 the evaluation set against gardener's own path with the same int8 tower: the same five species in the same order
 for 38, the two others differing only in the order of tied names (a pair sharing one vector, and names at
 probability 0.000); probabilities within 0.001. Its head outputs against the training code's own path (float16

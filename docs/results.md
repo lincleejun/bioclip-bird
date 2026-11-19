@@ -184,17 +184,24 @@ The location prior is the one part of naming that changes the answer by several 
 is unclear for shipping (CC BY-NC-SA in one place, Apache-2.0 in another). `eval/priors.py` compares, on the same
 crops (each run's best box, int8 tower in fp16): no prior; BirdNET geo through gardener's own posterior; and the GBIF
 record counts of the photo's state or province and month +-1 (`data/rarity`, from `distill/rarity.py`) as a soft
-prior (logit + beta x log share of records) or a hard list (only names with a record). GBIF names are matched to
-AviList by name, synonyms and a unique epithet; 24 (first set) and 25 (second set) crops' true names are still on no
-list of their region, mostly Cooper's Hawk (*Accipiter cooperii* in GBIF), and count as misses for the hard list.
+prior (logit + beta x log share of records) or a hard list (only names with a record).
+
+Two guards. The evaluation photos are research-grade iNaturalist observations, which GBIF imports, so each photo's
+own record is taken out of its region and month before scoring (the "own records left in" rows show the
+difference). GBIF names are matched to AviList by name, GBIF synonyms, gardener's synonyms and a unique epithet;
+gardener's renames of a lumped taxon (*Circus cyaneus* -> *C. hudsonius*, *Tyto alba* -> *T. furcata*) apply only in
+the Americas. Still on no list of their region in any month: 24 crops of the first set (all *Bubo virginianus*) and
+29 of the second (14 species, at most 3 crops each); the hard list counts them as misses.
 
 | Prior | First set (n = 1,039; California) top-1 / top-5 | Second set (n = 632; US, Canada, China) top-1 / top-5 |
 |---|---|---|
 | none | 87.9 % / 96.9 % | 79.1 % / 91.6 % |
 | BirdNET geo (gardener) | 92.1 % / 97.9 % | 83.7 % / 93.4 % |
-| GBIF soft, beta 0.5 | 94.4 % / 98.2 % | 83.1 % / 93.8 % |
+| GBIF soft, beta 0.5 | 94.4 % / 98.2 % | 82.9 % / 93.8 % |
 | GBIF soft, beta 1.0 | 95.5 % / 98.8 % | 83.9 % / 94.3 % |
-| GBIF hard list | 92.5 % / 96.2 % | 83.5 % / 93.8 % |
+| GBIF hard list | 92.5 % / 96.2 % | 82.9 % / 92.7 % |
+| GBIF soft, beta 1.0, own records left in | 95.5 % / 98.8 % | 83.9 % / 94.3 % |
+| GBIF hard list, own records left in | 92.5 % / 96.2 % | 83.5 % / 93.4 % |
 
 On the second set by group (top-1; `priors-e2.md` has top-5 too):
 
@@ -203,14 +210,17 @@ On the second set by group (top-1; `priors-e2.md` has top-5 too):
 | none | 84.0 % | 67.3 % | 82.2 % | 64.0 % | 84.9 % | 88.5 % |
 | BirdNET geo | 89.1 % | 74.0 % | 85.6 % | 71.6 % | 86.3 % | 93.3 % |
 | GBIF soft, beta 1.0 | 90.4 % | 74.0 % | 85.3 % | 70.1 % | 87.3 % | 94.3 % |
-| GBIF hard list | 85.3 % | 76.7 % | 85.9 % | 73.0 % | 87.3 % | 90.4 % |
+| GBIF hard list | 85.3 % | 74.7 % | 85.6 % | 72.0 % | 87.3 % | 89.5 % |
+| GBIF hard list, own records left in | 85.3 % | 76.7 % | 85.9 % | 73.0 % | 87.3 % | 90.4 % |
 
 Read: the first set flatters any prior that favours common birds (it holds 42 common California species). On the
 wider second set the GBIF soft prior ties BirdNET on top-1 (83.9 % against 83.7 %) and is ahead on top-5, but is
-1.5 points behind on the least-observed third of species, which a count-based prior pushes down. So GBIF counts can
-replace BirdNET geo at about the same accuracy, with a clearer licence (cite GBIF.org) and a small offline table
-for the phone; they are not an accuracy gain. China is the weak country with or without a prior (67.3 % top-1
-image-only, against 82-84 % for the US and Canada). `eval/results/priors-e1.md`, `priors-e2.md`.
+1.5 points behind on the least-observed third of species, which a count-based prior pushes down; taking the photos'
+own records out changes none of its numbers. The hard list's apparent edge on China and rare species was largely
+the photos' own records. So GBIF counts can replace BirdNET geo at about the same accuracy, with a clearer licence
+(cite GBIF.org) and a small offline table for the phone; they are not an accuracy gain. China is the weak country
+with or without a prior (67.3 % top-1 image-only, against 82-84 % for the US and Canada).
+`eval/results/priors-e1.md`, `priors-e2.md`.
 
 ## B. Finding the bird
 

@@ -10,8 +10,11 @@ argmax does. Region of a photo: its state/province (GADM level 1 in the GBIF tab
 set's bird photos are all in California; the second set's come from each observation's iNaturalist places (cached
 in data/eval2-places.json; a few API calls the first time).
 GBIF soft prior: logit += beta * log((n + 1) / (N + S)), n = the species' records in the region in the photo's month
-+-1, N their total, S the number of names. Hard list: names with n > 0 only. GBIF names are matched to AviList by
-name, by GBIF synonyms (data/rarity/synonyms.csv), by gardener's synonyms, and by an epithet unique in AviList.
++-1, N their total, S the number of names. Hard list: names with n > 0 only. Each evaluation photo's own record
+(GBIF imports research-grade iNaturalist observations) is taken out of its region and month first; the rows "own
+records left in" show what that changes. GBIF names are matched to AviList by
+name, by GBIF synonyms (data/rarity/synonyms.csv), by gardener's synonyms (renaming a valid AviList name only in the
+Americas), and by an epithet unique in AviList.
 """
 from __future__ import annotations
 
@@ -42,8 +45,13 @@ def truth(list_name: str) -> dict[str, dict]:
     return {r["path"]: {**r, "scientific": alias.get(norm(r["scientific"]), r["scientific"])} for r in rows if r["kind"] == "bird"}
 
 
-def gbif_to_avilist(sci: list[str]) -> dict[str, int]:
-    """GBIF species key -> row of the names matrix."""
+AMERICAS = ("US", "USA.", "CA", "CAN.")
+
+
+def gbif_to_avilist(sci: list[str], americas: bool) -> dict[str, int]:
+    """GBIF species key -> row of the names matrix. A GBIF name that is itself an AviList name is renamed by gardener's
+    synonyms only in the Americas: those rows split a lumped taxon there (Circus cyaneus -> C. hudsonius, Tyto alba ->
+    T. furcata), while elsewhere the GBIF name is the bird itself."""
     idx = {s: i for i, s in enumerate(sci)}
     alias = {norm(r["alias"]): norm(r["avilist_scientific"]) for r in csv.DictReader(open(SYN, newline=""))}
     epithet = defaultdict(list)
@@ -53,7 +61,7 @@ def gbif_to_avilist(sci: list[str]) -> dict[str, int]:
     out = {}
     for r in csv.DictReader(open(RARITY / "species.csv")):
         k, g, a = r["species_key"], norm(r["gbif_name"]), norm(r["avilist_name"])
-        name = alias.get(a) if a and alias.get(a) in idx else a or syn.get(k) or (alias.get(g) if alias.get(g) in idx else None)
+        name = (alias.get(a) if americas and a and alias.get(a) in idx else a) or syn.get(k) or (alias.get(g) if alias.get(g) in idx else None)
         if not name and len(g.split()) == 2 and len(epithet[g.split()[1]]) == 1:
             name = epithet[g.split()[1]][0]
         if name in idx:
@@ -61,10 +69,12 @@ def gbif_to_avilist(sci: list[str]) -> dict[str, int]:
     return out
 
 
-def counts(regions: set[str], key2row: dict[str, int], n_names: int) -> dict[str, np.ndarray]:
+def counts(regions: set[str], sci: list[str]) -> dict[str, np.ndarray]:
     """region -> (13, names) GBIF records per month (row 0 unused)."""
-    out, seen = {r: np.zeros((13, n_names)) for r in regions}, set()
+    maps = {True: gbif_to_avilist(sci, True), False: gbif_to_avilist(sci, False)}
+    out, seen = {r: np.zeros((13, len(sci))) for r in regions}, set()
     for r in csv.DictReader(open(RARITY / "counts.csv")):
+        key2row = maps[r["region"].startswith(AMERICAS)]
         if r["region"] in out and r["species_key"] in key2row:
             k = (r["region"], r["month"], r["species_key"])
             if k not in seen:                                          # the file repeats some blocks
@@ -139,20 +149,33 @@ def main() -> None:
     bird_prior = priors_for(lists, GeoPrior.load())["bird"]
     birdnet = np.stack([bird_prior.posterior(pv, bird_prior.p_geo(float(rows[p]["lat"]), float(rows[p]["lon"]), rows[p]["taken_at"]))
                         for p, pv in zip(keep, p_vis)])
-    key2row = gbif_to_avilist(sci)
-    n = counts(set(region.values()), key2row, len(sci))
+    n = counts(set(region.values()), sci)
     month = [int(rows[p]["taken_at"][5:7]) for p in keep]
-    win = np.stack([n[region[p]][[(m - 2 + d) % 12 + 1 for d in range(3)]].sum(0) for p, m in zip(keep, month)])
-    share = np.log((win + 1) / (win.sum(1, keepdims=True) + win.shape[1]))
     truths = [norm(rows[p]["scientific"]) for p in keep]
+    # The evaluation photos are research-grade iNaturalist observations, which GBIF imports: take each one's own
+    # record out of its region and month, so the prior has not seen the photo it is scored on.
+    own = {r: np.zeros_like(c) for r, c in n.items()}
+    for p, m, t in zip(keep, month, truths):
+        if t in sci:
+            own[region[p]][m, sci.index(t)] += 1
+    clean = {r: np.maximum(n[r] - own[r], 0) for r in n}
+
+    def window(table):
+        return np.stack([table[region[p]][[(m - 2 + d) % 12 + 1 for d in range(3)]].sum(0) for p, m in zip(keep, month)])
+    win, win_clean = window(n), window(clean)
+
+    def share(w):
+        return np.log((w + 1) / (w.sum(1, keepdims=True) + w.shape[1]))
 
     def top5(score):
         return np.argsort(-score, 1, kind="stable")[:, :5]
 
     variants = {"no location": top5(logits), "BirdNET geo (gardener)": top5(np.log(birdnet + 1e-30))}
     for b in BETAS:
-        variants[f"GBIF soft, beta {b}"] = top5(logits + b * share)
-    variants["GBIF hard list"] = top5(np.where(win > 0, logits, -1e9))
+        variants[f"GBIF soft, beta {b}"] = top5(logits + b * share(win_clean))
+    variants["GBIF hard list"] = top5(np.where(win_clean > 0, logits, -1e9))
+    variants["GBIF soft, beta 1.0, own records left in"] = top5(logits + share(win))
+    variants["GBIF hard list, own records left in"] = top5(np.where(win > 0, logits, -1e9))
 
     groups = {"all": [True] * len(keep)}
     if "country" in rows[keep[0]]:
@@ -167,8 +190,11 @@ def main() -> None:
     print(f"# Location priors on the same bird crops ({list_name}, boxes of run `{run}`)\n")
     print(f"{len(keep)} bird crops of {len(rows)} bird photos ({len(rows) - len(keep)} without a box are left out), "
           f"{len(set(truths))} species. Regions: {dict(Counter(region.values()).most_common(8))}"
-          f"{' ...' if len(set(region.values())) > 8 else ''}. Truth names on no GBIF list of their region (any month): "
-          f"{sum(n[region[p]][1:].sum(0)[sci.index(t)] == 0 for p, t in zip(keep, truths) if t in sci)}.\n")
+          f"{' ...' if len(set(region.values())) > 8 else ''}; {sum('.' not in region[p] for p in keep)} crops fell back to their "
+          f"country (state not matched). Own records taken out: {int(sum(o.sum() for o in own.values()))}.\n")
+    gone = Counter(t for p, t in zip(keep, truths) if t not in sci or clean[region[p]][1:].sum(0)[sci.index(t)] == 0)
+    print(f"True names with no GBIF record in their region in any month (own records out): {sum(gone.values())} crops, "
+          + ", ".join(f"*{t.capitalize()}* {c}" for t, c in gone.most_common()) + ".\n")
     print("| prior | " + " | ".join(f"{g} (n = {sum(m)}) top-1 / top-5" for g, m in groups.items()) + " |")
     print("|---|" + "---|" * len(groups))
     for name, top in variants.items():
