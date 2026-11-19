@@ -1,0 +1,59 @@
+{"what": "machine", "loadavg": [5.36, 19.06, 29.74]}
+{"what": "species", "model": "original", "device": "mps", "compute": "fp32", "load_s": 8.9, "b1_ms_median": 46.9, "b1_ms_p90": 47.6, "b32_img_s": 32.0, "peak_rss_gb": 4.35, "mps_driver_gb": 4.47}
+{"what": "species", "model": "original", "device": "mps", "compute": "fp16", "load_s": 6.2, "b1_ms_median": 41.4, "b1_ms_p90": 42.8, "b32_img_s": 38.6, "peak_rss_gb": 4.34, "mps_driver_gb": 4.4}
+{"what": "species", "model": "original", "device": "cpu", "compute": "fp32", "load_s": 5.8, "b1_ms_median": 197.4, "b1_ms_p90": 213.5, "b32_img_s": 7.6, "peak_rss_gb": 8.29}
+{"what": "species", "model": "fp16", "device": "mps", "compute": "fp32", "load_s": 6.1, "b1_ms_median": 46.3, "b1_ms_p90": 46.9, "b32_img_s": 32.8, "peak_rss_gb": 5.18, "mps_driver_gb": 4.47}
+{"what": "species", "model": "fp16", "device": "mps", "compute": "fp16", "load_s": 5.9, "b1_ms_median": 41.7, "b1_ms_p90": 43.2, "b32_img_s": 38.8, "peak_rss_gb": 5.19, "mps_driver_gb": 2.26}
+{"what": "species", "model": "fp16", "device": "cpu", "compute": "fp32", "load_s": 5.7, "b1_ms_median": 199.0, "b1_ms_p90": 209.0, "b32_img_s": 7.6, "peak_rss_gb": 5.19}
+{"what": "species", "model": "int8", "device": "mps", "compute": "fp32", "load_s": 6.3, "b1_ms_median": 47.1, "b1_ms_p90": 48.1, "b32_img_s": 32.1, "peak_rss_gb": 7.24, "mps_driver_gb": 4.47}
+{"what": "species", "model": "int8", "device": "mps", "compute": "fp16", "load_s": 5.8, "b1_ms_median": 41.8, "b1_ms_p90": 42.9, "b32_img_s": 38.8, "peak_rss_gb": 7.24, "mps_driver_gb": 2.26}
+{"what": "species", "model": "int8", "device": "cpu", "compute": "fp32", "load_s": 5.8, "b1_ms_median": 193.7, "b1_ms_p90": 200.8, "b32_img_s": 7.7, "peak_rss_gb": 7.24}
+{"what": "detector", "model": "owlv2", "device": "mps", "load_s": 2.5, "photos": 100, "ms_median": 131.5, "ms_p90": 135.6, "peak_rss_gb": 0.67, "mps_driver_gb": 1.14}
+{"what": "detector", "model": "owlv2", "device": "cpu", "load_s": 2.0, "photos": 100, "ms_median": 512.8, "ms_p90": 549.7, "peak_rss_gb": 1.28}
+{"what": "detector", "model": "owlv2-int8", "device": "mps", "load_s": 4.6, "photos": 100, "ms_median": 132.5, "ms_p90": 137.7, "peak_rss_gb": 1.99, "mps_driver_gb": 1.14}
+{"what": "detector", "model": "owlv2-int8", "device": "cpu", "load_s": 4.5, "photos": 100, "ms_median": 518.7, "ms_p90": 552.3, "peak_rss_gb": 1.99}
+{"what": "detector", "model": "rtdetr-r50", "device": "mps", "load_s": 2.2, "photos": 100, "ms_median": 37.4, "ms_p90": 42.4, "peak_rss_gb": 0.67, "mps_driver_gb": 1.3}
+{"what": "detector", "model": "rtdetr-r50", "device": "cpu", "load_s": 2.0, "photos": 100, "ms_median": 122.7, "ms_p90": 136.1, "peak_rss_gb": 1.14}
+{"what": "detector", "model": "rtdetr-r18", "device": "mps", "load_s": 2.1, "photos": 100, "ms_median": 20.1, "ms_p90": 32.7, "peak_rss_gb": 0.66, "mps_driver_gb": 1.21}
+{"what": "detector", "model": "rtdetr-r18", "device": "cpu", "load_s": 1.9, "photos": 100, "ms_median": 68.8, "ms_p90": 76.8, "peak_rss_gb": 1.0}
+{"what": "detector", "model": "dfine-small", "device": "mps", "load_s": 2.2, "photos": 100, "ms_median": 20.3, "ms_p90": 30.4, "peak_rss_gb": 0.68, "mps_driver_gb": 1.2}
+{"what": "detector", "model": "dfine-small", "device": "cpu", "load_s": 1.9, "photos": 100, "ms_median": 142.5, "ms_p90": 168.9, "peak_rss_gb": 0.73}
+{"what": "detector", "model": "dfine-nano", "device": "mps", "load_s": 2.1, "photos": 100, "ms_median": 18.2, "ms_p90": 29.5, "peak_rss_gb": 0.68, "mps_driver_gb": 0.16}
+{"what": "detector", "model": "dfine-nano", "device": "cpu", "load_s": 2.0, "photos": 100, "ms_median": 113.5, "ms_p90": 132.1, "peak_rss_gb": 0.65}
+{"what": "detector", "model": "yolov10m", "device": "cpu", "load_s": 0.5, "photos": 100, "ms_median": 53.9, "ms_p90": 63.5, "peak_rss_gb": 0.7}
+{"what": "detector", "model": "yolov10s", "device": "cpu", "load_s": 0.5, "photos": 100, "ms_median": 24.3, "ms_p90": 26.5, "peak_rss_gb": 0.56}
+{"what": "detector", "model": "yolov10n", "device": "cpu", "load_s": 0.5, "photos": 100, "ms_median": 13.7, "ms_p90": 14.5, "peak_rss_gb": 0.45}
+{"what": "machine", "loadavg": [11.55, 11.3, 20.73]}
+{"what": "coreml", "model": "BioCLIP", "device": "CPU_ONLY", "load_s": 2.4, "b1_ms_median": 99.3, "b1_ms_p90": 105.3, "all_outputs_zero": false, "peak_rss_gb": 2.36}
+{"what": "coreml", "model": "BioCLIP", "device": "CPU_AND_GPU", "load_s": 2.3, "b1_ms_median": 415.6, "b1_ms_p90": 423.4, "all_outputs_zero": false, "peak_rss_gb": 1.72}
+{"what": "coreml", "model": "BioCLIP", "device": "CPU_AND_NE", "load_s": 9.3, "b1_ms_median": 71.3, "b1_ms_p90": 71.7, "all_outputs_zero": false, "peak_rss_gb": 1.04}
+{"what": "coreml", "model": "BioCLIP", "device": "ALL", "load_s": 9.3, "b1_ms_median": 71.3, "b1_ms_p90": 72.6, "all_outputs_zero": false, "peak_rss_gb": 1.7}
+{"what": "coreml", "model": "Detector", "device": "CPU_ONLY", "load_s": 0.3, "b1_ms_median": 16.5, "b1_ms_p90": 17.9, "all_outputs_zero": false, "peak_rss_gb": 0.44}
+{"what": "coreml", "model": "Detector", "device": "CPU_AND_GPU", "load_s": 0.3, "b1_ms_median": 4.0, "b1_ms_p90": 4.1, "all_outputs_zero": false, "peak_rss_gb": 0.46}
+{"what": "coreml", "model": "Detector", "device": "CPU_AND_NE", "load_s": 0.4, "b1_ms_median": 15.9, "b1_ms_p90": 17.9, "all_outputs_zero": false, "peak_rss_gb": 0.44}
+{"what": "coreml", "model": "Detector", "device": "ALL", "load_s": 0.4, "b1_ms_median": 4.1, "b1_ms_p90": 4.2, "all_outputs_zero": false, "peak_rss_gb": 0.47}
+{"what": "machine", "loadavg": [8.29, 10.46, 19.68]}
+{"what": "species", "model": "original", "device": "mps", "compute": "fp32", "load_s": 6.2, "b1_ms_median": 46.8, "b1_ms_p90": 48.5, "b32_img_s": 32.0, "peak_rss_gb": 4.35, "mps_driver_gb": 4.47}
+{"what": "species", "model": "original", "device": "mps", "compute": "fp16", "load_s": 6.1, "b1_ms_median": 42.0, "b1_ms_p90": 43.0, "b32_img_s": 38.7, "peak_rss_gb": 4.35, "mps_driver_gb": 4.4}
+{"what": "species", "model": "original", "device": "cpu", "compute": "fp32", "load_s": 5.7, "b1_ms_median": 190.6, "b1_ms_p90": 200.9, "b32_img_s": 7.6, "peak_rss_gb": 8.28}
+{"what": "species", "model": "fp16", "device": "mps", "compute": "fp32", "load_s": 5.6, "b1_ms_median": 46.4, "b1_ms_p90": 46.9, "b32_img_s": 32.2, "peak_rss_gb": 5.19, "mps_driver_gb": 4.47}
+{"what": "species", "model": "fp16", "device": "mps", "compute": "fp16", "load_s": 5.7, "b1_ms_median": 41.1, "b1_ms_p90": 41.4, "b32_img_s": 39.0, "peak_rss_gb": 5.18, "mps_driver_gb": 2.26}
+{"what": "species", "model": "fp16", "device": "cpu", "compute": "fp32", "load_s": 5.6, "b1_ms_median": 195.5, "b1_ms_p90": 208.4, "b32_img_s": 7.5, "peak_rss_gb": 5.18}
+{"what": "species", "model": "int8", "device": "mps", "compute": "fp32", "load_s": 6.0, "b1_ms_median": 47.3, "b1_ms_p90": 47.9, "b32_img_s": 32.7, "peak_rss_gb": 7.24, "mps_driver_gb": 4.47}
+{"what": "species", "model": "int8", "device": "mps", "compute": "fp16", "load_s": 5.9, "b1_ms_median": 41.2, "b1_ms_p90": 41.7, "b32_img_s": 39.3, "peak_rss_gb": 7.24, "mps_driver_gb": 2.26}
+{"what": "species", "model": "int8", "device": "cpu", "compute": "fp32", "load_s": 5.7, "b1_ms_median": 187.6, "b1_ms_p90": 201.7, "b32_img_s": 7.1, "peak_rss_gb": 7.24}
+{"what": "detector", "model": "owlv2", "device": "mps", "load_s": 2.1, "photos": 100, "ms_median": 129.7, "ms_p90": 133.5, "peak_rss_gb": 0.67, "mps_driver_gb": 1.14}
+{"what": "detector", "model": "owlv2", "device": "cpu", "load_s": 2.0, "photos": 100, "ms_median": 486.8, "ms_p90": 517.2, "peak_rss_gb": 1.28}
+{"what": "detector", "model": "owlv2-int8", "device": "mps", "load_s": 4.5, "photos": 100, "ms_median": 130.4, "ms_p90": 135.5, "peak_rss_gb": 1.99, "mps_driver_gb": 1.14}
+{"what": "detector", "model": "owlv2-int8", "device": "cpu", "load_s": 4.5, "photos": 100, "ms_median": 503.8, "ms_p90": 537.8, "peak_rss_gb": 1.99}
+{"what": "detector", "model": "rtdetr-r50", "device": "mps", "load_s": 2.1, "photos": 100, "ms_median": 37.3, "ms_p90": 43.4, "peak_rss_gb": 0.66, "mps_driver_gb": 1.31}
+{"what": "detector", "model": "rtdetr-r50", "device": "cpu", "load_s": 2.0, "photos": 100, "ms_median": 117.1, "ms_p90": 128.7, "peak_rss_gb": 1.14}
+{"what": "detector", "model": "rtdetr-r18", "device": "mps", "load_s": 2.0, "photos": 100, "ms_median": 24.0, "ms_p90": 37.3, "peak_rss_gb": 0.66, "mps_driver_gb": 1.21}
+{"what": "detector", "model": "rtdetr-r18", "device": "cpu", "load_s": 1.9, "photos": 100, "ms_median": 66.4, "ms_p90": 72.5, "peak_rss_gb": 1.0}
+{"what": "detector", "model": "dfine-small", "device": "mps", "load_s": 2.0, "photos": 100, "ms_median": 19.3, "ms_p90": 31.7, "peak_rss_gb": 0.69, "mps_driver_gb": 1.2}
+{"what": "detector", "model": "dfine-small", "device": "cpu", "load_s": 2.1, "photos": 100, "ms_median": 142.5, "ms_p90": 165.5, "peak_rss_gb": 0.73}
+{"what": "detector", "model": "dfine-nano", "device": "mps", "load_s": 2.1, "photos": 100, "ms_median": 16.0, "ms_p90": 25.8, "peak_rss_gb": 0.68, "mps_driver_gb": 0.16}
+{"what": "detector", "model": "dfine-nano", "device": "cpu", "load_s": 1.8, "photos": 100, "ms_median": 108.4, "ms_p90": 125.5, "peak_rss_gb": 0.65}
+{"what": "detector", "model": "yolov10m", "device": "cpu", "load_s": 0.5, "photos": 100, "ms_median": 52.8, "ms_p90": 58.6, "peak_rss_gb": 0.7}
+{"what": "detector", "model": "yolov10s", "device": "cpu", "load_s": 0.5, "photos": 100, "ms_median": 23.9, "ms_p90": 25.2, "peak_rss_gb": 0.56}
+{"what": "detector", "model": "yolov10n", "device": "cpu", "load_s": 0.5, "photos": 100, "ms_median": 13.5, "ms_p90": 14.5, "peak_rss_gb": 0.45}

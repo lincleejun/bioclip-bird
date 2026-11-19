@@ -50,19 +50,22 @@ int8 changes no answer from right to wrong with the prior and one without; the s
 
 Where the bird is. Everything else fixed (gate, original BioCLIP, prior); only the detector changes. 1,046 bird
 photos of the evaluation set, which have no true boxes: the IoU columns measure agreement with OWLv2's best box,
-not accuracy. Against true boxes (CUB-200-2011 test split, 5,794 photos) only the two D-FINE models were run.
+not accuracy. Against true boxes: the CUB-200-2011 test split (5,794 close-ups of one bird each).
 
-| Detector | Size, licence | Bird found | Best-box IoU with OWLv2: mean / >= 0.9 | CUB true boxes: IoU >= 0.5 / >= 0.75 |
+| Detector | Size, licence | Bird found (eval set) | Best-box IoU with OWLv2: mean / >= 0.9 | CUB true boxes: IoU >= 0.5 / >= 0.75 |
 |---|---|---|---|---|
-| OWLv2 | 620 MB, Apache-2.0 | 99.0 % | reference | untested |
-| OWLv2 int8 | 156 MB, Apache-2.0 | 99.0 % | 0.971 / 98.3 % | untested |
-| RT-DETRv2 r50 | 172 MB, Apache-2.0 | 98.5 % | 0.833 / 70.2 % | untested |
-| RT-DETRv2 r18 | 81 MB, Apache-2.0 | 97.8 % | 0.806 / 64.3 % | untested |
+| OWLv2 | 620 MB, Apache-2.0 | 99.0 % | reference | 99.2 % / 96.7 % |
+| OWLv2 int8 | 156 MB, Apache-2.0 | 99.0 % | 0.971 / 98.3 % | 99.1 % / 96.5 % |
+| RT-DETRv2 r50 | 172 MB, Apache-2.0 | 98.5 % | 0.833 / 70.2 % | 99.5 % / 94.6 % |
+| RT-DETRv2 r18 | 81 MB, Apache-2.0 | 97.8 % | 0.806 / 64.3 % | 98.3 % / 90.1 % |
 | D-FINE small | 42 MB, Apache-2.0 | 97.8 % | 0.809 / 66.3 % | 98.7 % / 91.8 % |
 | D-FINE nano | 15 MB, Apache-2.0 | 97.9 % | 0.787 / 60.3 % | 98.3 % / 90.0 % |
-| YOLOv10 m | 62 MB, AGPL-3.0 | 91.2 % | 0.842 / 72.7 % | untested |
-| YOLOv10 s | 29 MB, AGPL-3.0 | 89.0 % | 0.820 / 68.2 % | untested |
-| YOLOv10 n | 9 MB, AGPL-3.0 | 82.5 % | 0.802 / 60.5 % | untested |
+| YOLOv10 m | 62 MB, AGPL-3.0 | 91.2 % | 0.842 / 72.7 % | 99.0 % / 93.7 % |
+| YOLOv10 s | 29 MB, AGPL-3.0 | 89.0 % | 0.820 / 68.2 % | 98.1 % / 91.8 % |
+| YOLOv10 n | 9 MB, AGPL-3.0 | 82.5 % | 0.802 / 60.5 % | 96.2 % / 86.2 % |
+
+On CUB's close-ups every detector boxes the bird well; the YOLO models' lower finding rate on the evaluation set
+comes from smaller, more distant birds.
 
 The COCO detectors (all but OWLv2) find birds only, not mammals. Their effect on naming the bird is a separate
 table in docs/results.md (B4): bird top-1 92.4 % with OWLv2, 92.2 % with OWLv2 int8, 91.1 % with D-FINE nano,
@@ -70,22 +73,31 @@ table in docs/results.md (B4): bird top-1 92.4 % with OWLv2, 92.2 % with OWLv2 i
 
 ### Size and speed
 
-No dedicated speed test on an idle machine was done; these are the measurements that exist (Apple M4 Max).
+Each model alone, one fresh process per measurement, Apple M4 Max 64 GB, PyTorch (MPS = the Mac's GPU).
+Measured twice; the two passes agree within about 5 %, the numbers are the first pass. The machine was not idle
+(another session was building in Xcode; load average 5-11). Full table, memory and method:
+[eval/results/speed/report.md](eval/results/speed/report.md).
 
-| Species model | Size | Speed (image tower only) |
-|---|---|---|
-| BioCLIP 2.5 original | 3.94 GB | 31.9 images/s, fp32 (`distill/bench.py`) |
-| fp16 or int8 image tower | 1.26 / 0.63 GB | 33 images/s fp32 compute, 40 fp16 (batches of 32, GPU idle, one measurement); loads in about 5 s |
+| Species model (image tower, 224 px) | File | MPS fp32: batch-1 ms / images/s at batch 32 | MPS fp16 | CPU fp32 | Peak memory (RSS) |
+|---|---|---|---|---|---|
+| BioCLIP 2.5 original | 3.94 GB | 47 ms / 32 | 41 ms / 39 | 197 ms / 7.6 | 4.4 GB |
+| fp16 image tower | 1.26 GB | 46 ms / 33 | 42 ms / 39 | 199 ms / 7.6 | 5.2 GB |
+| int8 image tower | 0.63 GB | 47 ms / 32 | 42 ms / 39 | 194 ms / 7.7 | 7.2 GB |
+| int8, Core ML on the Mac (Neural Engine) | 0.63 GB | 71 ms (batch 1) | | 99 ms | 1.0 GB |
 
-| Detector | Size | Identify time per photo, median (whole pipeline, logged in passing) |
-|---|---|---|
-| OWLv2 / OWLv2 int8 | 620 / 156 MB | 190 / 204 ms |
-| RT-DETRv2 r50 / r18 | 172 / 81 MB | 107 / 107 ms |
-| D-FINE small / nano | 42 / 15 MB | 129 / 124 ms |
-| YOLOv10 m / s / n (CPU, onnxruntime) | 62 / 29 / 9 MB | 112 / 81 / 66 ms |
+int8 is a storage format: it computes as fast as the original and, as loaded today (unpacked to fp32 first), peaks
+higher in memory. fp16 compute is 20 % faster at no cost in answers (A2 in docs/results.md).
 
-The identify times include the gate, the original BioCLIP and the prior, and were taken while the GPU was shared
-with other jobs to different degrees: read them roughly.
+| Detector (whole photo in, bird boxes out) | File | MPS ms per photo, median / p90 | CPU ms per photo |
+|---|---|---|---|
+| OWLv2 | 620 MB | 132 / 136 | 513 |
+| OWLv2 int8 | 156 MB | 133 / 138 | 519 |
+| RT-DETRv2 r50 | 172 MB | 37 / 42 | 123 |
+| RT-DETRv2 r18 | 81 MB | 20 / 33 | 69 |
+| D-FINE small | 42 MB | 20 / 30 | 143 |
+| D-FINE nano | 15 MB | 18 / 30 | 114 |
+| D-FINE nano, Core ML on the Mac (GPU) | 15.5 MB | 4 / 4 | 17 |
+| YOLOv10 m / s / n (onnxruntime) | 62 / 29 / 9 MB | - | 54 / 24 / 14 |
 
 ### Data
 
@@ -102,7 +114,8 @@ redistributed). Details, biases and the training data: [docs/data.md](docs/data.
 - **Highest bird-finding rate:** OWLv2 or its int8 file (99.0 % of bird photos given a box); int8 is 156 MB
   instead of 620 MB, with top-1 92.2 % instead of 92.4 %.
 - **Smallest detector with a permissive licence:** D-FINE nano (15 MB, Apache-2.0): 97.9 % found, top-1 91.1 %;
-  on CUB's true boxes 98.3 % of its boxes overlap the truth by IoU 0.5 or more. It finds birds only.
+  on CUB's true boxes 98.3 % of its boxes overlap the truth by IoU 0.5 or more; 18 ms a photo on the Mac's GPU
+  against OWLv2's 132 ms. It finds birds only.
 - **Avoid for this use:** the YOLOv10 ONNX models (AGPL-3.0) found 82.5-91.2 % of the birds.
 - The distilled students are not good enough to replace BioCLIP (60.0 % top-1 at best).
 

@@ -138,13 +138,32 @@ ViT-B: 5 epochs, batch 64, lr 5e-5, from SigLIP2 base).
 | `bioclip-2.5-vith14-visual-int8.safetensors` | 0.63 GB | safetensors, int8 weights + fp16 scales | 632 M |
 | Core ML `BioCLIP.mlpackage` (mobile/) | 633.9 MB | Core ML, 8-bit linear | 632 M |
 
-Speed of the image tower alone (GPU idle, batches of 32, Apple M4 Max; one measurement from the working notes, its
-log not kept): 33 images/s computing in fp32, 40 images/s in fp16, the same for the fp16 and the int8 file (the
-file format changes the size on disk, not the compute). Loading the tower from the slim file takes about 5 s
-without reading the original checkpoint. Memory was not measured reliably: the peak resident size read 4.5 GB for
-all four variants. For comparison, `distill/bench.py` measured the original's forward at 31.9 images/s
-(*notes*). Core ML on this Mac: see A4 (speed not measured). **A dedicated speed test on an
-idle machine (batch 1, CPU, Core ML) was not done.**
+Speed, load time and memory of the image tower alone: `eval/results/speed/report.md` (`./run eval/speed.py all`,
+one fresh process per measurement, random 224 px input, preprocessing not included; Apple M4 Max 64 GB; run twice,
+the passes agree within about 5 %; the machine was not idle: another session was building in Xcode, load average
+5-11 at the start of each pass). First pass:
+
+| Tower | Device, compute | Load s | Batch 1 ms, median / p90 | Batch 32 images/s | Peak RSS GB | MPS driver GB |
+|---|---|---|---|---|---|---|
+| original (both towers loaded) | MPS fp32 | 8.9 | 46.9 / 47.6 | 32.0 | 4.35 | 4.47 |
+| original | MPS fp16 | 6.2 | 41.4 / 42.8 | 38.6 | 4.34 | 4.40 |
+| original | CPU fp32 | 5.8 | 197.4 / 213.5 | 7.6 | 8.29 | - |
+| fp16 file | MPS fp32 | 6.1 | 46.3 / 46.9 | 32.8 | 5.18 | 4.47 |
+| fp16 file | MPS fp16 | 5.9 | 41.7 / 43.2 | 38.8 | 5.19 | 2.26 |
+| fp16 file | CPU fp32 | 5.7 | 199.0 / 209.0 | 7.6 | 5.19 | - |
+| int8 file | MPS fp32 | 6.3 | 47.1 / 48.1 | 32.1 | 7.24 | 4.47 |
+| int8 file | MPS fp16 | 5.8 | 41.8 / 42.9 | 38.8 | 7.24 | 2.26 |
+| int8 file | CPU fp32 | 5.8 | 193.7 / 200.8 | 7.7 | 7.24 | - |
+| Core ML 8-bit, on this Mac | CPU only | 2.4 | 99.3 / 105.3 | - | 2.36 | - |
+| Core ML 8-bit, on this Mac | CPU and GPU | 2.3 | 415.6 / 423.4 | - | 1.72 | - |
+| Core ML 8-bit, on this Mac | CPU and Neural Engine | 9.3 | 71.3 / 71.7 | - | 1.04 | - |
+
+The file format changes the size on disk, not the compute: all three run at the same speed. fp16 compute is about
+20 % faster than fp32 and halves the GPU memory, with no change in answers (A2). The int8 file peaks highest in
+resident memory because `slim.load()` unpacks every weight to fp32 on the CPU before moving it. On Apple Silicon
+CPU and GPU share one memory pool, so read the two memory columns together. The Core ML model gave non-zero output
+on every compute unit here; on the iOS simulator its default setting returned zeros (ios/README.md), which this
+Mac does not reproduce. Core ML speed on a phone: not measured.
 
 ## B. Finding the bird
 
@@ -158,11 +177,20 @@ box; IoU mean / median over photos with a box; IoU >= 0.5 / 0.75 over all photos
 
 | Detector | Found | IoU mean / median | IoU >= 0.5 | IoU >= 0.75 | Boxes per photo | Directory |
 |---|---|---|---|---|---|---|
-| D-FINE nano | 99.98 % | 0.892 / 0.934 | 98.3 % | 90.0 % | 1.53 | `boxes-cub-dfine-nano` |
+| OWLv2 | 99.98 % | 0.917 / 0.940 | 99.2 % | 96.7 % | 1.04 | `boxes-cub-owlv2` |
+| OWLv2 int8 | 99.97 % | 0.915 / 0.939 | 99.1 % | 96.5 % | 1.04 | `boxes-cub-owlv2-int8` |
+| RT-DETRv2 r50 | 99.98 % | 0.917 / 0.946 | 99.5 % | 94.6 % | 1.13 | `boxes-cub-rtdetr-r50` |
+| RT-DETRv2 r18 | 99.98 % | 0.894 / 0.937 | 98.3 % | 90.1 % | 1.49 | `boxes-cub-rtdetr-r18` |
 | D-FINE small | 99.95 % | 0.903 / 0.942 | 98.7 % | 91.8 % | 1.30 | `boxes-cub-dfine-small` |
-| OWLv2, OWLv2 int8, RT-DETRv2 r18 / r50, YOLOv10 n / s / m | untested | | | | | |
+| D-FINE nano | 99.98 % | 0.892 / 0.934 | 98.3 % | 90.0 % | 1.53 | `boxes-cub-dfine-nano` |
+| YOLOv10 m (CPU) | 99.72 % | 0.913 / 0.944 | 99.0 % | 93.7 % | 1.04 | `boxes-cub-yolov10m` |
+| YOLOv10 s (CPU) | 99.24 % | 0.904 / 0.939 | 98.1 % | 91.8 % | 1.04 | `boxes-cub-yolov10s` |
+| YOLOv10 n (CPU) | 98.33 % | 0.880 / 0.925 | 96.2 % | 86.2 % | 1.05 | `boxes-cub-yolov10n` |
 
-The other seven were not run: the run was stopped before it reached them.
+On these close-ups every detector finds the bird and boxes it well; the spread is in the tight-box column
+(IoU >= 0.75: 86 % to 97 %) and in extra boxes (D-FINE and RT-DETR r18 add a box on a third to half of the photos).
+The YOLO models' shortfall on the evaluation set (B2, B4: 82-91 % found) does not show here, so it comes from the
+smaller, more distant birds of iNaturalist photos rather than from boxing a visible bird badly.
 
 Limits: CUB photos are close-ups of one bird, mostly well framed: easier than real shoots, and they say nothing
 about small or distant birds or flocks. The COCO detectors were trained on COCO's
@@ -239,20 +267,40 @@ memory gave the same best box (to 3 decimals) and first species on all 1,571 pho
 | YOLOv10 m / s / n | `onnx-community/yolov10m` / `s` / `n` | AGPL-3.0 | 62 / 29 / 9 MB | 640, letterboxed | onnxruntime, CPU only |
 | D-FINE nano, Core ML (mobile/) | converted | Apache-2.0 | 15.5 MB | 640 x 640 | Core ML |
 
-No dedicated detector speed test was done. What exists is the median "identify" time per bird photo that each
-pipeline run of B4 logged in passing (gate + detector + original BioCLIP + prior, ms; each `report.md`): OWLv2 190,
-OWLv2 int8 204, RT-DETRv2 r50 107, r18 107, D-FINE small 129, nano 124, YOLOv10 m 112, s 81, n 66. The GPU was
-shared with other jobs to different degrees in each run, so these compare only roughly, and the YOLO models ran on
-the CPU (onnxruntime) while the rest used the GPU (MPS). The CUB runs logged a median of 94 ms (D-FINE small) and
-306 ms (D-FINE nano) per photo for the detector alone, both while other jobs were using the GPU heavily
-(`boxes-cub-*/summary.json`): not a speed measurement. Core ML D-FINE nano: matches the transformers model on 80
-evaluation photos (`mobile/README.md`), speed not measured.
+Speed of each detector alone (`eval/results/speed/report.md`, same runs and caveats as A6): the first 100 bird
+photos of the evaluation set, whole photo in, bird boxes out, the detector's own pre- and post-processing included,
+image decoding not; 5 warm-up photos. First pass:
+
+| Detector | Device | Load s | ms per photo, median / p90 | Peak RSS GB | MPS driver GB |
+|---|---|---|---|---|---|
+| OWLv2 | MPS | 2.5 | 131.5 / 135.6 | 0.67 | 1.14 |
+| OWLv2 | CPU | 2.0 | 512.8 / 549.7 | 1.28 | - |
+| OWLv2 int8 | MPS | 4.6 | 132.5 / 137.7 | 1.99 | 1.14 |
+| OWLv2 int8 | CPU | 4.5 | 518.7 / 552.3 | 1.99 | - |
+| RT-DETRv2 r50 | MPS | 2.2 | 37.4 / 42.4 | 0.67 | 1.30 |
+| RT-DETRv2 r50 | CPU | 2.0 | 122.7 / 136.1 | 1.14 | - |
+| RT-DETRv2 r18 | MPS | 2.1 | 20.1 / 32.7 | 0.66 | 1.21 |
+| RT-DETRv2 r18 | CPU | 1.9 | 68.8 / 76.8 | 1.00 | - |
+| D-FINE small | MPS | 2.2 | 20.3 / 30.4 | 0.68 | 1.20 |
+| D-FINE small | CPU | 1.9 | 142.5 / 168.9 | 0.73 | - |
+| D-FINE nano | MPS | 2.1 | 18.2 / 29.5 | 0.68 | 0.16 |
+| D-FINE nano | CPU | 2.0 | 113.5 / 132.1 | 0.65 | - |
+| YOLOv10 m | CPU (onnxruntime) | 0.5 | 53.9 / 63.5 | 0.70 | - |
+| YOLOv10 s | CPU (onnxruntime) | 0.5 | 24.3 / 26.5 | 0.56 | - |
+| YOLOv10 n | CPU (onnxruntime) | 0.5 | 13.7 / 14.5 | 0.45 | - |
+| D-FINE nano, Core ML on this Mac | CPU only | 0.3 | 16.5 / 17.9 | 0.44 | - |
+| D-FINE nano, Core ML on this Mac | CPU and GPU | 0.3 | 4.0 / 4.1 | 0.46 | - |
+| D-FINE nano, Core ML on this Mac | CPU and Neural Engine | 0.4 | 15.9 / 17.9 | 0.44 | - |
+
+The Core ML rows take a 640 x 640 image already resized (model call only). OWLv2 int8 loads slower and peaks
+higher than OWLv2 for the same reason as the int8 tower in A6. Core ML D-FINE nano matches the transformers model
+on 80 evaluation photos (`mobile/README.md`).
 
 ## C. Whole pipeline, per photo (logged in passing)
 
 The engine logs only two times per photo: decoding and "identify" (gate + detector + species + prior together).
 They were taken while other jobs shared the machine to different degrees, so they compare poorly between runs;
-the notes in A6 and B5 are all there is. Identify, median ms per photo, birds: original 190 (`teacher`), int8 184 / int8 fp16
+the per-model speeds are in A6 and B5. Identify, median ms per photo, birds: original 190 (`teacher`), int8 184 / int8 fp16
 compute 177, OWLv2 int8 204, D-FINE nano 124, RT-DETRv2 r50 107, YOLOv10 n 66 (CPU), students 141-149 (each
 `report.md`). Decoding: 1-2 ms for these 500 px files.
 
@@ -285,7 +333,9 @@ evaluation photos; port 8771 free. `eval/agree.py` needs only this repository.
 ./eval_student.sh runs/s-small-2/student.pt [--no-geo]       # -> runs/s-small-2/golden[-no-geo]
 python eval/agree.py species; python eval/agree.py boxes     # A2, A3, B2 from eval/results
 ./run eval/crops.py                                          # A4
-./run eval/cub_boxes.py dfine-nano dfine-small ...          # B1, needs data/cub/CUB_200_2011
+./run eval/cub_boxes.py owlv2 owlv2-int8 rtdetr-r50 rtdetr-r18 dfine-small dfine-nano yolov10m yolov10s yolov10n   # B1, needs data/cub/CUB_200_2011
+./run eval/speed.py all > eval/results/speed/raw.jsonl        # A6, B5 (PyTorch)
+./mobile/ct eval/speed.py coreml >> eval/results/speed/raw.jsonl  # A6, B5 (Core ML on the Mac)
 ```
 
 The `preds.ndjson[.gz]` files have photo paths rewritten to `photos/...` (relative to `eval/`); their header still

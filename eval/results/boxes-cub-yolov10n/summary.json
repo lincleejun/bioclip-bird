@@ -1,0 +1,12 @@
+{
+ "detector": "yolov10n",
+ "photos": 5794,
+ "device": "cpu",
+ "found": 0.9833,
+ "iou_mean": 0.8799,
+ "iou_median": 0.9255,
+ "iou50": 0.9615,
+ "iou75": 0.8619,
+ "boxes_per_photo": 1.054,
+ "ms_median_while_benchmarking": 13.5
+}

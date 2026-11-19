@@ -41,7 +41,7 @@ Photographers = distinct names in the attribution column.
   matrix, so it says little about rare or look-alike species elsewhere. The student models' extra training photos
   also come from iNaturalist, which favours them here.
 - **Photos are not redistributed.** `eval/groundtruth.csv` keeps each photo's source URL, licence and attribution
-  and a sha256; `python eval/fetch_photos.py` downloads them from iNaturalist (one request a second; untested
+  and a sha256; `python eval/fetch_photos.py` downloads them from iNaturalist (one request a second; checked on 3 photos
   against the live API).
 
 ## CUB-200-2011

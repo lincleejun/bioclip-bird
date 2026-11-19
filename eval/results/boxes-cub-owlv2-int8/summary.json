@@ -1,0 +1,12 @@
+{
+ "detector": "owlv2-int8",
+ "photos": 5794,
+ "device": "mps",
+ "found": 0.9997,
+ "iou_mean": 0.9146,
+ "iou_median": 0.9387,
+ "iou50": 0.9912,
+ "iou75": 0.9653,
+ "boxes_per_photo": 1.044,
+ "ms_median_while_benchmarking": 131.7
+}

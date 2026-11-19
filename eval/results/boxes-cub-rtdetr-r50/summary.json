@@ -1,0 +1,12 @@
+{
+ "detector": "rtdetr-r50",
+ "photos": 5794,
+ "device": "mps",
+ "found": 0.9998,
+ "iou_mean": 0.9175,
+ "iou_median": 0.9456,
+ "iou50": 0.9945,
+ "iou75": 0.9456,
+ "boxes_per_photo": 1.129,
+ "ms_median_while_benchmarking": 37.0
+}
